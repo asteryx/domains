@@ -2,22 +2,17 @@ extern crate actix_web;
 extern crate listenfd;
 
 use listenfd::ListenFd;
-use actix_web::{server, App, HttpRequest, Responder, fs};
+use actix_web::{server, App, fs};
 
+mod index;
 
-fn index(req: &HttpRequest) -> impl Responder {
-    let to = req.match_info().get("name").unwrap_or("World");
-    format!("Hello to {}!", to)
-    
-}
 
 fn main() {
     let mut listenfd = ListenFd::from_env();
     let mut server = server::new(|| {
         App::new()
-            // .resource("/", |r| r.f(index))
-            .resource("/{name}", |r| {
-                r.get().f(index);
+            .resource("/", |r| {
+                r.get().f(index::index);
             })
             .handler("/static", fs::StaticFiles::new("src/static")
             .unwrap())
