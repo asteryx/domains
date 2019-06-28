@@ -1,4 +1,4 @@
-use actix_web::{HttpRequest, HttpResponse, Responder};
+use actix_web::{HttpResponse, HttpRequest, Responder};
 use tera::{Tera, Context};
 
 
@@ -24,13 +24,13 @@ use tera::{Tera, Context};
 
 
 
-pub fn index(_req: &HttpRequest) -> impl Responder {
+pub fn index(_req: HttpRequest) -> impl Responder {
     // let tera = compile_templates!("src/static/dist/*");
     let mut tera = Tera::default();
     let context = Context::new();  
-    match tera.add_template_file("src/static/dist/index.html", Some("index")) {
+    match tera.add_template_file("src/ng/dist/index.html", Some("index")) {
         Ok(res)=> res,
-        Err(e) => println!("{:?}", e),
+        Err(e) => println!("Error ALARM!!!!! {:?}", e),
     };
     
     println!("templates {}", tera.templates.len());
