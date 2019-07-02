@@ -1,6 +1,6 @@
-use actix_web::{HttpResponse, HttpRequest, Responder};
+use actix_web::{HttpResponse, HttpRequest, Error};
 use tera::{Tera, Context};
-
+use futures::{future::ok, Future};
 
 // #[derive(Serialize)]
 // struct MyObj {
@@ -24,21 +24,17 @@ use tera::{Tera, Context};
 
 
 
-pub fn index(_req: HttpRequest) -> impl Responder {
-    // let tera = compile_templates!("src/static/dist/*");
+pub fn index(_req: HttpRequest) -> impl Future<Item = HttpResponse, Error = Error> {
     let mut tera = Tera::default();
     let context = Context::new();  
     match tera.add_template_file("src/ng/dist/index.html", Some("index")) {
         Ok(res)=> res,
         Err(e) => println!("Error ALARM!!!!! {:?}", e),
     };
-    
-    println!("templates {}", tera.templates.len());
 
     let rendered = tera.render("index", &context).unwrap();
 
-    // println!("terra {}", rendered.unwrap());
-    HttpResponse::Ok()
-            .content_type("text/html; charset=UTF-8")
-            .body(rendered)
+    ok(HttpResponse::Ok()
+            .content_type("text/html")
+            .body(rendered))
 }
