@@ -1,4 +1,8 @@
-// #[macro_use]
+
+#[macro_use]
+extern crate json;
+
+#[macro_use]
 extern crate actix_web;
 extern crate actix_files;
 extern crate listenfd;
