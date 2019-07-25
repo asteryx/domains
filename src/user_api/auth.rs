@@ -23,6 +23,7 @@ pub struct MyError {
   status: u16,
 }
 
+
 impl Display for MyError {
   fn fmt(&self, f: &mut Formatter) -> FmtResult {
     write!(f, "{}", to_string_pretty(self).unwrap())
@@ -33,16 +34,19 @@ impl ResponseError for MyError {
   // builds the actual response to send back when an error occurs
   fn render_response(&self) -> HttpResponse {
     let err_json = json!({ "error": self.msg });
+    
+    println!("{}", &self);
+
     HttpResponse::build(StatusCode::from_u16(self.status).unwrap()).json(err_json)
   }
 }
 
 // web::Json
 
-pub fn register (item: web::Json<Register>, req: HttpRequest) -> impl Future<Item = HttpResponse, Error = Error> {
+pub fn register (item: web::Json<Register>, req: HttpRequest) -> impl Future<Item = HttpResponse, Error = MyError> {
     println!("request: {:?}", req);
     println!("model: {:?}", item);
-
+    
     ok(HttpResponse::Ok()
             .content_type("application/json")
             .json(item.0))
