@@ -1,3 +1,4 @@
+#![allow(warnings, unused)]
 #[macro_use]
 extern crate json;
 
