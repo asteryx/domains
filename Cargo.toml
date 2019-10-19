@@ -18,6 +18,7 @@ serde_derive = "1.0.92"
 serde_json = "1.0.39"
 json = "*"
 num_cpus = "1.10.1"
+toml = "0.5.3"
 
 [profile.dev]
 debug = true  # Добавляет флаг `-g` для компилятора;

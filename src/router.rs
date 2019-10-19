@@ -3,8 +3,6 @@ use actix_files as fs;
 use actix_web::{error, web, App, HttpRequest, HttpResponse, Scope};
 
 use crate::index;
-use crate::models::db::ConnDsl;
-use crate::share::common::AppState;
 use crate::user_api::auth::login;
 use actix::Addr;
 use actix_web::error::JsonPayloadError;

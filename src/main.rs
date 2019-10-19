@@ -10,16 +10,15 @@ extern crate listenfd;
 extern crate serde;
 
 extern crate tera;
-use crate::models::db::init;
-use crate::share::common::AppState;
 use actix_files as fs;
 use actix_web::{middleware, web, App, HttpServer};
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::SqliteConnection;
 use listenfd::ListenFd;
 
+mod config;
+mod db;
 mod index;
-mod models;
 mod router;
 mod share;
 mod user_api;
@@ -27,12 +26,9 @@ mod user_api;
 fn main() {
     let mut listenfd = ListenFd::from_env();
     std::env::set_var("RUST_LOG", "actix_web=info");
-    // env_logger::init();
-    let manager = ConnectionManager::<SqliteConnection>::new("data.sqlite");
-    let pool = Pool::builder()
-        .max_size(5)
-        .build(manager)
-        .expect("Failed to create pool.");
+    //    env_logger::init();
+    let conf = config::Config::from_file();
+    let pool = db::init_pool(conf);
 
     let mut server = HttpServer::new(move || {
         App::new()

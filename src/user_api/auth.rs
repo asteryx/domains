@@ -8,11 +8,9 @@ use serde_json::{json, to_string_pretty};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Register {
+pub struct Login {
     email: String,
-    name: String,
     password: String,
-    confirm_password: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -41,10 +39,9 @@ impl ResponseError for MyError {
 // web::Json
 
 pub fn login(
-    item: web::Json<Register>,
+    item: web::Json<Login>,
     req: HttpRequest,
 ) -> impl Future<Item = HttpResponse, Error = MyError> {
-    println!("request: {:?}", req);
     println!("model: {:?}", item);
 
     ok(HttpResponse::Ok()
