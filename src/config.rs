@@ -4,19 +4,16 @@ use std::io::{Read, Write};
 use toml;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct DB {
-    pub database_url: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     pub database_url: String,
+    pub log_level: String,
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
             database_url: "db.sqlite".to_string(),
+            log_level: "ERROR".to_string(),
         }
     }
 }

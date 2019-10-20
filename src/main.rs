@@ -23,6 +23,12 @@ mod router;
 mod share;
 mod user_api;
 
+#[macro_use]
+extern crate log;
+//extern crate env_logger;
+
+use log::Level;
+
 pub struct AppState {
     pub config: config::Config,
     pub db: Pool<ConnectionManager<SqliteConnection>>,
@@ -53,9 +59,20 @@ impl std::fmt::Debug for AppState {
 
 fn main() {
     let mut listenfd = ListenFd::from_env();
-    //    std::env::set_var("RUST_LOG", "actix_web=info");
-    //    env_logger::init();
-    let state: web::Data<AppState> = web::Data::new(AppState::default());
+
+    let app_state: AppState = AppState::default();
+    let log_level = app_state.config.log_level.clone();
+    let state: web::Data<AppState> = web::Data::new(app_state);
+
+    // Check if set env for logging
+    match std::env::var("RUST_LOG") {
+        Ok(_) => (),
+        Err(_) => {
+            std::env::set_var("RUST_LOG", format!("actix_web={}", log_level));
+        }
+    };
+
+    env_logger::init();
 
     let mut server = HttpServer::new(move || {
         App::new()
