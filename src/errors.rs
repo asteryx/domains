@@ -1,55 +1,26 @@
-use actix_web::{error::ResponseError, HttpResponse};
-use derive_more::Display;
-use diesel::result::{DatabaseErrorKind, Error as DBError};
-use std::convert::From;
-use uuid::parser::ParseError;
+use actix_web::http::StatusCode;
+use actix_web::{HttpResponse, ResponseError};
+use serde_derive::{Deserialize, Serialize};
+use serde_json::{json, to_string_pretty};
+use std::fmt::{Display, Formatter, Result};
 
-#[derive(Debug, Display)]
-pub enum ServiceError {
-    #[display(fmt = "Internal Server Error")]
-    InternalServerError,
-
-    #[display(fmt = "BadRequest: {}", _0)]
-    BadRequest(String),
-
-    #[display(fmt = "Unauthorized")]
-    Unauthorized,
+#[derive(Debug, Serialize)]
+pub struct ErrorResponse {
+    pub msg: String,
+    pub status: u16,
 }
 
-// impl ResponseError trait allows to convert our errors into http responses with appropriate data
-impl ResponseError for ServiceError {
-    fn error_response(&self) -> HttpResponse {
-        match self {
-            ServiceError::InternalServerError => {
-                HttpResponse::InternalServerError().json("Internal Server Error, Please try later")
-            }
-            ServiceError::BadRequest(ref message) => HttpResponse::BadRequest().json(message),
-            ServiceError::Unauthorized => HttpResponse::Unauthorized().json("Unauthorized"),
-        }
+impl Display for ErrorResponse {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        write!(f, "{}", to_string_pretty(self).unwrap())
     }
 }
 
-// we can return early in our handlers if UUID provided by the user is not valid
-// and provide a custom message
-impl From<ParseError> for ServiceError {
-    fn from(_: ParseError) -> ServiceError {
-        ServiceError::BadRequest("Invalid UUID")
-    }
-}
+impl ResponseError for ErrorResponse {
+    // builds the actual response to send back when an error occurs
+    fn render_response(&self) -> HttpResponse {
+        let err_json = json!({ "msg": self.msg });
 
-impl From<DBError> for ServiceError {
-    fn from(error: DBError) -> ServiceError {
-        // Right now we just care about UniqueViolation from diesel
-        // But this would be helpful to easily map errors as our app grows
-        match error {
-            DBError::DatabaseError(kind, info) => {
-                if let DatabaseErrorKind::UniqueViolation = kind {
-                    let message = info.details().unwrap_or_else(|| info.message()).to_string();
-                    return ServiceError::BadRequest(message);
-                }
-                ServiceError::InternalServerError
-            }
-            _ => ServiceError::InternalServerError,
-        }
+        HttpResponse::build(StatusCode::from_u16(self.status).unwrap()).json(err_json)
     }
 }

@@ -1,11 +1,11 @@
-#[allow(dead_code)]
-use actix_files as fs;
-use actix_web::{error, web, App, HttpRequest, HttpResponse, Scope};
-
+use crate::errors::ErrorResponse;
 use crate::index;
 use crate::user_api::auth::login;
 use actix::Addr;
+
+use actix_files as fs;
 use actix_web::error::JsonPayloadError;
+use actix_web::{error, web, App, HttpRequest, HttpResponse, Scope};
 use serde::private::de::IdentifierDeserializer;
 use serde_derive::{Deserialize, Serialize};
 use std::error::Error;
@@ -26,21 +26,14 @@ pub fn user_api_scope(path: &str) -> Scope {
     // .service(web::resource("/path3").to_async(|| HttpResponse::MethodNotAllowed()))
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ResponseError {
-    pub msg: String,
-}
-
 fn json_error_handler(err: JsonPayloadError, req: &HttpRequest) -> actix_web::Error {
     dbg!(&err);
     if let JsonPayloadError::Deserialize(error) = &err {
         dbg!(error);
     };
-    error::InternalError::from_response(
-        err,
-        HttpResponse::BadRequest().json(ResponseError {
-            msg: String::from("error messsage"),
-        }),
-    )
+    ErrorResponse {
+        msg: String::from("error messsage"),
+        status: 400,
+    }
     .into()
 }

@@ -1,12 +1,12 @@
+use crate::errors::ErrorResponse;
 use crate::AppState;
-use actix_web::http::StatusCode;
 use actix_web::{web, Error, HttpRequest, HttpResponse, ResponseError};
+use diesel::prelude::*;
 use futures::stream::Stream;
-use futures::{future::ok, Future};
+use futures::{future::err, future::ok, Future};
 use json::JsonValue;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{json, to_string_pretty};
-use std::fmt::{Display, Formatter, Result as FmtResult};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Login {
@@ -14,39 +14,48 @@ pub struct Login {
     password: String,
 }
 
-#[derive(Debug, Serialize)]
-pub struct MyError {
-    msg: String,
-    status: u16,
-}
-
-impl Display for MyError {
-    fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "{}", to_string_pretty(self).unwrap())
-    }
-}
-
-impl ResponseError for MyError {
-    // builds the actual response to send back when an error occurs
-    fn render_response(&self) -> HttpResponse {
-        let err_json = json!({ "error": self.msg });
-
-        println!("{}", &self);
-
-        HttpResponse::build(StatusCode::from_u16(self.status).unwrap()).json(err_json)
-    }
-}
-
-// web::Json
-
 pub fn login(
-    item: web::Json<Login>,
+    login: web::Json<Login>,
     req: HttpRequest,
     data: web::Data<AppState>,
-) -> impl Future<Item = HttpResponse, Error = MyError> {
-    ok(HttpResponse::Ok()
-        .content_type("application/json")
-        .json(item.0))
+) -> impl Future<Item = HttpResponse, Error = ErrorResponse> {
+    use crate::db::models::User;
+    use crate::db::schema::users::dsl::*;
+
+    let connection = match data.db.get() {
+        Ok(conn) => conn,
+        Err(_) => {
+            return err(ErrorResponse {
+                msg: "error dsfsdfdf".to_string(),
+                status: 400,
+            })
+        }
+    };
+
+    let results: Vec<User> = users
+        .filter(email.eq(&login.email))
+        .limit(5)
+        .load::<User>(&connection)
+        .expect("Error loading posts");
+
+    let count_users: usize = results.iter().count();
+
+    if count_users == 1 {
+        let user = &results[0];
+        //check password
+
+        ok(HttpResponse::Ok()
+            .content_type("application/json")
+            .json(json!(user)))
+    } else if count_users > 1 {
+        //error too many users ???????
+        unreachable!()
+    } else {
+        // If db is no user create user with password
+        ok(HttpResponse::Ok()
+            .content_type("application/json")
+            .json(login.0))
+    }
 }
 
 // pub fn register (pl: web::Payload) -> impl Future<Item = HttpResponse, Error = Error> {

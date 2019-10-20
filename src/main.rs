@@ -1,7 +1,8 @@
 #![allow(warnings, unused)]
 #[macro_use]
 extern crate json;
-
+#[macro_use]
+extern crate diesel;
 #[macro_use]
 extern crate actix_web;
 extern crate actix_files;
@@ -18,6 +19,7 @@ use listenfd::ListenFd;
 
 mod config;
 mod db;
+mod errors;
 mod index;
 mod router;
 mod share;
