@@ -3,22 +3,20 @@ use std::fs::File;
 use std::io::{Read, Write};
 use toml;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DB {
     pub database_url: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
-    pub db: DB,
+    pub database_url: String,
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
-            db: DB {
-                database_url: "db.sqlite".to_string(),
-            },
+            database_url: "db.sqlite".to_string(),
         }
     }
 }

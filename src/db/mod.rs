@@ -16,16 +16,16 @@ impl Actor for ConnDsl {
     type Context = SyncContext<Self>;
 }
 
-pub fn init_pool(config: Config) -> Pool<ConnectionManager<SqliteConnection>> {
+pub fn init_pool(config: &Config) -> Pool<ConnectionManager<SqliteConnection>> {
     let db_url = match std::env::var("DATABASE_URL") {
         Ok(res) => res,
-        Err(_) => config.db.database_url,
+        Err(_) => config.database_url.to_string(),
     };
-    //    let db_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    //    dbg!(&db_url);
-    let manager = ConnectionManager::<SqliteConnection>::new(db_url);
+
+    let manager: ConnectionManager<SqliteConnection> =
+        ConnectionManager::<SqliteConnection>::new(db_url);
     Pool::builder()
-        .max_size(5)
+        .max_size(6)
         .build(manager)
         .expect("Failed to create pool.")
 }

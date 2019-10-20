@@ -1,3 +1,4 @@
+use crate::AppState;
 use actix_web::http::StatusCode;
 use actix_web::{web, Error, HttpRequest, HttpResponse, ResponseError};
 use futures::stream::Stream;
@@ -41,9 +42,8 @@ impl ResponseError for MyError {
 pub fn login(
     item: web::Json<Login>,
     req: HttpRequest,
+    data: web::Data<AppState>,
 ) -> impl Future<Item = HttpResponse, Error = MyError> {
-    println!("model: {:?}", item);
-
     ok(HttpResponse::Ok()
         .content_type("application/json")
         .json(item.0))

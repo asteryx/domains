@@ -23,16 +23,43 @@ mod router;
 mod share;
 mod user_api;
 
+pub struct AppState {
+    pub config: config::Config,
+    pub db: Pool<ConnectionManager<SqliteConnection>>,
+}
+
+impl Default for AppState {
+    fn default() -> AppState {
+        let config: config::Config = config::Config::from_file();
+        let db: Pool<ConnectionManager<SqliteConnection>> = db::init_pool(&config);
+        AppState {
+            config: config,
+            db: db,
+        }
+    }
+}
+
+impl std::fmt::Debug for AppState {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        fmt.debug_struct("AppState")
+            .field("config", &self.config)
+            .field(
+                "db",
+                &format_args!("Pool<ConnectionManager<SqliteConnection>>"),
+            )
+            .finish()
+    }
+}
+
 fn main() {
     let mut listenfd = ListenFd::from_env();
-    std::env::set_var("RUST_LOG", "actix_web=info");
+    //    std::env::set_var("RUST_LOG", "actix_web=info");
     //    env_logger::init();
-    let conf = config::Config::from_file();
-    let pool = db::init_pool(conf);
+    let state: web::Data<AppState> = web::Data::new(AppState::default());
 
     let mut server = HttpServer::new(move || {
         App::new()
-            .data(pool.clone())
+            .register_data(state.clone())
             .wrap(middleware::Logger::default())
             .service(fs::Files::new("/static", "src/static/").show_files_listing())
             .service(fs::Files::new("/ng", "src/ng/dist/").show_files_listing())
