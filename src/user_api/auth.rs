@@ -34,7 +34,7 @@ pub fn login(
 
     let results: Vec<User> = users
         .filter(email.eq(&login.email))
-        .limit(5)
+        .limit(2)
         .load::<User>(&connection)
         .expect("Error loading posts");
 
@@ -48,13 +48,14 @@ pub fn login(
             .content_type("application/json")
             .json(json!(user)))
     } else if count_users > 1 {
-        //error too many users ???????
+        //too many users ???????
         unreachable!()
     } else {
         // If db is no user create user with password
-        ok(HttpResponse::Ok()
-            .content_type("application/json")
-            .json(login.0))
+        err(ErrorResponse {
+            msg: "Username/password didn't match".to_string(),
+            status: 400,
+        })
     }
 }
 
