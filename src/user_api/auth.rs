@@ -26,37 +26,37 @@ pub fn login(
         Ok(conn) => conn,
         Err(_) => {
             return err(ErrorResponse {
-                msg: "error dsfsdfdf".to_string(),
-                status: 400,
+                msg: "Temporary technical problems on the server".to_string(),
+                status: 500,
             })
         }
     };
 
-    let results: Vec<User> = users
+    let mut results: Vec<User> = users
         .filter(email.eq(&login.email))
         .limit(2)
         .load::<User>(&connection)
-        .expect("Error loading posts");
+        .expect("Error loading users");
 
     let count_users: usize = results.iter().count();
 
     if count_users == 1 {
-        let user = &results[0];
-        //check password
-
-        ok(HttpResponse::Ok()
-            .content_type("application/json")
-            .json(json!(user)))
+        let mut user = &mut results[0];
+        user.set_pasword(&*login.password);
+        dbg!(&user);
+        if user.check_password(&*login.password) {
+            return ok(HttpResponse::Ok()
+                .content_type("application/json")
+                .json(json!(user)));
+        };
     } else if count_users > 1 {
-        //too many users ???????
-        unreachable!()
-    } else {
-        // If db is no user create user with password
-        err(ErrorResponse {
-            msg: "Username/password didn't match".to_string(),
-            status: 400,
-        })
+        log::error!("Too many users selected with username {}", &login.email);
     }
+    // If db is no user or password invalid
+    err(ErrorResponse {
+        msg: "Username/password didn't match".to_string(),
+        status: 400,
+    })
 }
 
 // pub fn register (pl: web::Payload) -> impl Future<Item = HttpResponse, Error = Error> {

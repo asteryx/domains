@@ -20,6 +20,7 @@ use listenfd::ListenFd;
 mod config;
 mod db;
 mod errors;
+mod hashers;
 mod index;
 mod router;
 mod share;
