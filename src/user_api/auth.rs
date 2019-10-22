@@ -41,9 +41,8 @@ pub fn login(
     let count_users: usize = results.iter().count();
 
     if count_users == 1 {
-        let mut user = &mut results[0];
-        user.set_pasword(&*login.password);
-        dbg!(&user);
+        let user = &results.pop().expect("Error pop user from users array");
+
         if user.check_password(&*login.password) {
             return ok(HttpResponse::Ok()
                 .content_type("application/json")
