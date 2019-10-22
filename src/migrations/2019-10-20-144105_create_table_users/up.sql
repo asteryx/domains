@@ -6,3 +6,7 @@ CREATE TABLE users (
     password VARCHAR NOT NULL,
     name VARCHAR NOT NULL DEFAULT ""
 );
+
+CREATE UNIQUE INDEX users_email_unique_index ON users (
+	email	ASC
+);
