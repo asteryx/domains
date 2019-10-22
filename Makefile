@@ -1,6 +1,6 @@
 
 install:
-	cargo install systemfd cargo-watch && cd src/ng && npm install
+	sudo apt install libmysqlclient-dev libsqlite3-dev libpq-dev && cargo install systemfd cargo-watch diesel_cli && cd src/ng && npm install
 migration:
 	./migration.sh $(MAKECMDGOALS)
 start:
