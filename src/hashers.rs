@@ -22,7 +22,19 @@ impl Display for HasherError {
 }
 
 pub struct PBKDF2PasswordHasher {
-    pub iterations: u32,
+    iterations: u32,
+    version: i32,
+    algorithm: String,
+}
+
+impl Default for PBKDF2PasswordHasher {
+    fn default() -> PBKDF2PasswordHasher {
+        PBKDF2PasswordHasher {
+            iterations: 12_032,
+            version: 0,
+            algorithm: "pbkdf2_sha256".to_string(),
+        }
+    }
 }
 
 impl PBKDF2PasswordHasher {
@@ -31,14 +43,11 @@ impl PBKDF2PasswordHasher {
     }
 
     pub fn encode(&self, raw_password: &str) -> Result<String, HasherError> {
-        let algorithm = "pbkdf2_sha256".to_string();
-
         if raw_password == "".to_string() {
             return Err(HasherError::PasswordEmpty);
         };
 
         let mut rng = OsRng {};
-
         // 128-bit salt
         let mut salt = [0u8; 16];
         match rng.try_fill_bytes(&mut salt) {
@@ -56,15 +65,22 @@ impl PBKDF2PasswordHasher {
             &mut derived_key,
         );
 
-        let mut result = "$rpbkdf2$0$".to_string();
-        let mut tmp = [0u8; 4];
-        BigEndian::write_u32(&mut tmp, self.iterations);
-        result.push_str(&base64::encode(&tmp));
+        let mut byte_iteration = [0u8; 4];
+        BigEndian::write_u32(&mut byte_iteration, self.iterations);
+
+        let mut result = "$".to_string();
+        result.push_str(&self.algorithm);
+        result.push('$');
+        result.push_str(&self.version.to_string());
+        result.push('$');
+        result.push_str(&base64::encode(&byte_iteration));
         result.push('$');
         result.push_str(&base64::encode(&salt));
         result.push('$');
         result.push_str(&base64::encode(&derived_key));
         result.push('$');
+        // string like
+        // '$pbkdf2_sha256$0$AAAvAA==$0ukP0SdY6w4gpVjKtspCHQ==$NG8YPhHFl3IPfObsdsFQriAuG5bDmsFpqyweAneNfBU=$'
         Ok(result)
     }
 
@@ -77,14 +93,15 @@ impl PBKDF2PasswordHasher {
         };
 
         // Check the name
-        if iter.next() != Some("rpbkdf2") {
+        if iter.next() != Some(&self.algorithm) {
             return Err(HasherError::InvalidFormat);
         };
 
         // Parse format - currenlty only version 0 is supported
+        let version = self.version.to_string();
         match iter.next() {
             Some(fstr) => match fstr {
-                "0" => {}
+                version => {}
                 _ => return Err(HasherError::InvalidFormat),
             },
             None => return Err(HasherError::InvalidFormat),
@@ -134,7 +151,6 @@ impl PBKDF2PasswordHasher {
 
         let mut output = vec![0u8; hash.len()];
         pbkdf2::<Hmac<Sha256>>(raw_password.as_bytes(), &salt, c as usize, &mut output);
-
         // Be careful here - its important that the comparison be done using a fixed
         // time equality check. Otherwise an adversary that can measure how long
         // this step takes can learn about the hashed value which would allow them
@@ -144,10 +160,5 @@ impl PBKDF2PasswordHasher {
         } else {
             Err(HasherError::HashMismatch)
         }
-    }
-}
-impl Default for PBKDF2PasswordHasher {
-    fn default() -> PBKDF2PasswordHasher {
-        PBKDF2PasswordHasher { iterations: 12_032 }
     }
 }

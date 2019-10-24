@@ -12,7 +12,7 @@ pub struct User {
 }
 
 impl User {
-    pub fn set_pasword(&mut self, raw_password: &str) -> bool {
+    pub fn set_password(&mut self, raw_password: &str) -> bool {
         let hasher: PBKDF2PasswordHasher = PBKDF2PasswordHasher::new();
         match hasher.encode(raw_password) {
             Ok(hashed) => {
