@@ -40,18 +40,18 @@ impl User {
     }
 }
 
-pub struct ActorUser {
+pub struct FindUser {
     pub email: String,
 }
 
-impl Message for ActorUser {
+impl Message for FindUser {
     type Result = io::Result<User>;
 }
 
-impl Handler<ActorUser> for DbExecutor {
+impl Handler<FindUser> for DbExecutor {
     type Result = io::Result<User>;
 
-    fn handle(&mut self, actor_user: ActorUser, _: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, actor_user: FindUser, _: &mut Self::Context) -> Self::Result {
         use crate::db::schema::users::dsl::*;
         log::info!("Get user from email {}", &actor_user.email);
 

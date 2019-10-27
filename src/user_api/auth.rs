@@ -22,7 +22,7 @@ pub fn login(
     data: web::Data<AppState>,
 ) -> impl Future<Item = HttpResponse, Error = ErrorResponse> {
     data.db
-        .send(db::models::users::ActorUser {
+        .send(db::models::users::FindUser {
             email: login.email.clone(),
         })
         .from_err()

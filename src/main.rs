@@ -69,7 +69,8 @@ fn main() {
         .name("domains")
         .build();
 
-    let db = SyncArbiter::start(num_cpus::get() * 3, move || db::DbExecutor::new());
+    //    let db = SyncArbiter::start(num_cpus::get() * 3, move || db::DbExecutor::new());
+    let db = SyncArbiter::start(1, move || db::DbExecutor::new());
 
     let app_state: AppState = AppState::new(db);
     let log_level = app_state.config.log_level.clone();
