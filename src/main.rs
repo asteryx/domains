@@ -11,6 +11,7 @@ extern crate listenfd;
 extern crate serde;
 
 extern crate tera;
+use actix::prelude::*;
 use actix_files as fs;
 use actix_web::{middleware, web, App, HttpServer};
 use diesel::r2d2::{ConnectionManager, Pool};
@@ -30,17 +31,17 @@ mod user_api;
 extern crate log;
 //extern crate env_logger;
 
+use crate::db::DbExecutor;
 use log::Level;
 
 pub struct AppState {
     pub config: config::Config,
-    pub db: Pool<ConnectionManager<SqliteConnection>>,
+    pub db: Addr<DbExecutor>,
 }
 
-impl Default for AppState {
-    fn default() -> AppState {
+impl AppState {
+    fn new(db: Addr<DbExecutor>) -> AppState {
         let config: config::Config = config::Config::from_file();
-        let db: Pool<ConnectionManager<SqliteConnection>> = db::init_pool(&config);
         AppState {
             config: config,
             db: db,
@@ -63,8 +64,16 @@ impl std::fmt::Debug for AppState {
 fn main() {
     let mut listenfd = ListenFd::from_env();
 
-    let app_state: AppState = AppState::default();
+    let sys = System::builder()
+        .stop_on_panic(false)
+        .name("domains")
+        .build();
+
+    let db = SyncArbiter::start(num_cpus::get() * 3, move || db::DbExecutor::new());
+
+    let app_state: AppState = AppState::new(db);
     let log_level = app_state.config.log_level.clone();
+
     let state: web::Data<AppState> = web::Data::new(app_state);
 
     // Check if set env for logging
@@ -74,8 +83,9 @@ fn main() {
             std::env::set_var("RUST_LOG", format!("actix_web={}", log_level));
         }
     };
-
     env_logger::init();
+
+    log::info!("CPU's num {}", num_cpus::get());
 
     let mut server = HttpServer::new(move || {
         App::new()
@@ -92,6 +102,6 @@ fn main() {
     } else {
         server.bind("127.0.0.1:8000").unwrap()
     };
-
     server.run().unwrap();
+    sys.run();
 }

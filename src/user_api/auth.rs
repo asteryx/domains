@@ -1,5 +1,7 @@
+use crate::db;
 use crate::errors::ErrorResponse;
 use crate::AppState;
+use actix::prelude::*;
 use actix_web::{web, Error, HttpRequest, HttpResponse, ResponseError};
 use diesel::prelude::*;
 use futures::stream::Stream;
@@ -19,43 +21,58 @@ pub fn login(
     req: HttpRequest,
     data: web::Data<AppState>,
 ) -> impl Future<Item = HttpResponse, Error = ErrorResponse> {
-    use crate::db::models::User;
-    use crate::db::schema::users::dsl::*;
+    data.db
+        .send(db::models::users::ActorUser {
+            email: login.email.clone(),
+        })
+        .from_err()
+        .and_then(move |res| match res {
+            Ok(user) => {
+                dbg!(&user);
+                if user.check_password(&*login.password) {
+                    ok(HttpResponse::Ok()
+                        .content_type("application/json")
+                        .json(json!(user)))
+                } else {
+                    err(ErrorResponse {
+                        msg: "Username/password didn't match".to_string(),
+                        status: 400,
+                    })
+                }
+            }
+            Err(_) => {
+                dbg!("error in db");
+                err(ErrorResponse {
+                    msg: "Username/password didn't match".to_string(),
+                    status: 400,
+                })
+            }
+        })
 
-    let connection = match data.db.get() {
-        Ok(conn) => conn,
-        Err(_) => {
-            return err(ErrorResponse {
-                msg: "Temporary technical problems on the server".to_string(),
-                status: 500,
-            })
-        }
-    };
+    //    let count_users: usize = results.iter().count();
+    //
+    //    if count_users == 1 {
+    //        let user = &results.pop().expect("Error pop user from users array");
+    //
+    //        if user.check_password(&*login.password) {
+    //            return ok(HttpResponse::Ok()
+    //                .content_type("application/json")
+    //                .json(json!(user)));
+    //        };
+    //    } else if count_users > 1 {
+    //        log::error!("Too many users selected with username {}", &login.email);
+    //    }
 
-    let mut results: Vec<User> = users
-        .filter(email.eq(&login.email))
-        .limit(2)
-        .load::<User>(&connection)
-        .expect("Error loading users");
-
-    let count_users: usize = results.iter().count();
-
-    if count_users == 1 {
-        let user = &results.pop().expect("Error pop user from users array");
-
-        if user.check_password(&*login.password) {
-            return ok(HttpResponse::Ok()
-                .content_type("application/json")
-                .json(json!(user)));
-        };
-    } else if count_users > 1 {
-        log::error!("Too many users selected with username {}", &login.email);
-    }
+    //    err(ErrorResponse {
+    //        msg: "Temporary technical problems on the server".to_string(),
+    //        status: 500,
+    //    })
     // If db is no user or password invalid
-    err(ErrorResponse {
-        msg: "Username/password didn't match".to_string(),
-        status: 400,
-    })
+    //    dbg!("not used actors");
+    //    err(ErrorResponse {
+    //        msg: "Username/password didn't match".to_string(),
+    //        status: 400,
+    //    })
 }
 
 // pub fn register (pl: web::Payload) -> impl Future<Item = HttpResponse, Error = Error> {

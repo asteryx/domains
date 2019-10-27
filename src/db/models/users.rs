@@ -1,5 +1,10 @@
+use crate::db::DbExecutor;
 use crate::hashers::PBKDF2PasswordHasher;
+use actix::{Handler, Message};
+use diesel::prelude::*;
 use serde_derive::{Deserialize, Serialize};
+use std::io;
+use std::io::Error;
 use std::ptr::hash;
 
 #[derive(Queryable, Debug, Serialize, Deserialize)]
@@ -31,6 +36,32 @@ impl User {
                 false
             }
             _ => false,
+        }
+    }
+}
+
+pub struct ActorUser {
+    pub email: String,
+}
+
+impl Message for ActorUser {
+    type Result = io::Result<User>;
+}
+
+impl Handler<ActorUser> for DbExecutor {
+    type Result = io::Result<User>;
+
+    fn handle(&mut self, actor_user: ActorUser, _: &mut Self::Context) -> Self::Result {
+        use crate::db::schema::users::dsl::*;
+        log::info!("Get user from email {}", &actor_user.email);
+
+        match users
+            .filter(email.eq(&actor_user.email))
+            .limit(2)
+            .load::<User>(&self.pool.get().unwrap())
+        {
+            Ok(mut items) => Ok(items.pop().unwrap()),
+            Err(_) => Err(io::Error::new(io::ErrorKind::Other, "Database error")),
         }
     }
 }

@@ -1,3 +1,4 @@
+use actix::MailboxError;
 use actix_web::http::StatusCode;
 use actix_web::{HttpResponse, ResponseError};
 use serde_derive::{Deserialize, Serialize};
@@ -22,5 +23,15 @@ impl ResponseError for ErrorResponse {
         let err_json = json!({ "msg": self.msg });
 
         HttpResponse::build(StatusCode::from_u16(self.status).unwrap()).json(err_json)
+    }
+}
+
+impl From<MailboxError> for ErrorResponse {
+    fn from(error: MailboxError) -> Self {
+        dbg!(&error);
+        ErrorResponse {
+            msg: "Error from actor".to_string(),
+            status: 500,
+        }
     }
 }
