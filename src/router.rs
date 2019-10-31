@@ -28,11 +28,13 @@ pub fn user_api_scope(path: &str) -> Scope {
 
 fn json_error_handler(err: JsonPayloadError, req: &HttpRequest) -> actix_web::Error {
     dbg!(&err);
-    if let JsonPayloadError::Deserialize(error) = &err {
-        dbg!(error);
+    let error_message: String = match err {
+        JsonPayloadError::Payload(payload_error) => format!("{}", payload_error),
+        JsonPayloadError::Deserialize(error) => "error deserialize".to_string(),
+        _ => format!("{}", err),
     };
     ErrorResponse {
-        msg: String::from("error messsage"),
+        msg: error_message,
         status: 400,
     }
     .into()

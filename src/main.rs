@@ -9,7 +9,6 @@ extern crate actix_files;
 extern crate dotenv;
 extern crate listenfd;
 extern crate serde;
-
 extern crate tera;
 use actix::prelude::*;
 use actix_files as fs;
@@ -65,12 +64,12 @@ fn main() {
     let mut listenfd = ListenFd::from_env();
 
     let sys = System::builder()
-        .stop_on_panic(false)
+        .stop_on_panic(true)
         .name("domains")
         .build();
 
-    //    let db = SyncArbiter::start(num_cpus::get() * 3, move || db::DbExecutor::new());
-    let db = SyncArbiter::start(1, move || db::DbExecutor::new());
+    let db = SyncArbiter::start(num_cpus::get() * 3, move || db::DbExecutor::new());
+    //    let db = SyncArbiter::start(5, move || db::DbExecutor::new());
 
     let app_state: AppState = AppState::new(db);
     let log_level = app_state.config.log_level.clone();
@@ -103,6 +102,6 @@ fn main() {
     } else {
         server.bind("127.0.0.1:8000").unwrap()
     };
-    server.run().unwrap();
+    server.start();
     sys.run();
 }
