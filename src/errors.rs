@@ -28,9 +28,10 @@ impl ResponseError for ErrorResponse {
 
 impl From<MailboxError> for ErrorResponse {
     fn from(error: MailboxError) -> Self {
-        dbg!(&error);
+        log::error!("Error in mailbox {}", error);
+
         ErrorResponse {
-            msg: "Error from actor".to_string(),
+            msg: "Something went wrong. Please try again later".to_string(),
             status: 500,
         }
     }
