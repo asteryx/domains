@@ -31,18 +31,21 @@ fn json_error_handler(err: JsonPayloadError, req: &HttpRequest) -> actix_web::Er
     let error_message: String = match err {
         JsonPayloadError::Payload(payload_error) => format!("{}", payload_error),
         JsonPayloadError::Deserialize(error) => {
+            let mut tmp: String = "".to_string();
+
             if error.is_data() {
                 let (type_error, field_name): (String, String) =
                     parse_error_text(format!("{}", error));
 
                 if field_name != "" {
-                    format!("Data error: {} `{}`", type_error, field_name)
-                } else {
-                    format!("{}", &error)
+                    tmp = format!("Data error: {} `{}`", type_error, field_name);
                 }
-            } else {
-                format!("{}", &error)
             }
+
+            if tmp == "".to_string() {
+                tmp = format!("{}", &error);
+            }
+            tmp
         }
         _ => format!("{}", err),
     };
