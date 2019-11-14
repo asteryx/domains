@@ -1,14 +1,16 @@
-use crate::AppState;
+use crate::{db, AppState};
 extern crate signal_hook;
 use actix::prelude::*;
 use actix::utils::IntervalFunc;
-use actix_web::web;
+use actix_web::{web, web::Data};
 use signal_hook::flag as signal_flag;
 use std::io::Error;
+use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
+//use tokio_timer::Delay;
 
 pub struct Ping {
     state: web::Data<AppState>,
@@ -29,6 +31,7 @@ impl Ping {
         signal_flag::register_usize(signal_hook::SIGQUIT, Arc::clone(&term), SIGQUIT).unwrap();
 
         loop {
+            //            let _ = Delay(Duration::from_millis(1)).await;
             match term.load(Ordering::Relaxed) {
                 0 => {
                     // Do some useful stuff here
@@ -74,26 +77,40 @@ impl Actor for Ping {
         //#1  not bad one problem. If long time for all domains ping
         // will fall behind
         // spawn an interval stream into our context
-        IntervalFunc::new(
-            Duration::from_secs(self.state.config.ping_interval),
-            Self::tick_interval,
-        )
-        .finish()
-        .spawn(context);
+        //        IntervalFunc::new(
+        //            Duration::from_secs(self.state.config.ping_interval),
+        //            Self::tick_interval,
+        //        )
+        //        .finish()
+        //        .spawn(context);
 
         // Problem with hot adding domains. need workaround
-        for i in 0..10 {
-            IntervalFunc::new(
-                Duration::from_secs(self.state.config.ping_interval),
-                move |s, c| Self::tick_interval_many(s, c, &i),
-            )
-            .finish()
-            .spawn(context);
-        }
+        //        for i in 0..10 {
+        //            IntervalFunc::new(
+        //                Duration::from_secs(self.state.config.ping_interval),
+        //                move |s, c| Self::tick_interval_many(s, c, &i),
+        //            )
+        //            .finish()
+        //            .spawn(context);
+        //        }
 
         // Problem with sync code. everything doesn't work.
-        TimerFunc::new(Duration::from_millis(100), Self::tick_loop).spawn(context);
+        //        TimerFunc::new(Duration::from_millis(100), Self::tick_loop).spawn(context);
 
         // need spawn new thread or move to another process
+    }
+}
+
+pub fn ping_fn(state: Arc<web::Data<AppState>>) {
+    dbg!(&state);
+
+    loop {
+        println!("11111111111111111111");
+        error!("qqqqqqqqqqqqqq");
+        &state.db.do_send(db::models::users::FindUser {
+            email: "a@aa.com".to_string(),
+        });
+
+        sleep(Duration::from_secs(20));
     }
 }

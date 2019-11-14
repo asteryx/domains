@@ -41,7 +41,7 @@ pub fn login(
                 }
             }
             Err(_) => {
-                dbg!("error in db");
+                //                dbg!(e);
                 err(ErrorResponse {
                     msg: "Username/password didn't match".to_string(),
                     status: 400,

@@ -4,7 +4,7 @@ install:
 migration:
 	./migration.sh $(MAKECMDGOALS)
 start:
-	DATABASE_URL="db.sqlite" systemfd --no-pid -s http::8000 -- cargo watch -x run
+	DATABASE_URL="db.sqlite" RUST_BACKTRACE=1 systemfd --no-pid -s http::8000 -- cargo watch -x run
 ngbuild:
 	cd src/ng/ && npm run watch
 print-schema:

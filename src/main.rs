@@ -16,6 +16,8 @@ use actix_web::{middleware, web, App, HttpServer};
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::SqliteConnection;
 use listenfd::ListenFd;
+use log::Level;
+use std::thread;
 
 mod config;
 mod db;
@@ -29,10 +31,12 @@ mod user_api;
 
 #[macro_use]
 extern crate log;
-//extern crate env_logger;
+extern crate env_logger;
 
 use crate::db::DbExecutor;
-use log::Level;
+use std::sync::Arc;
+use std::thread::sleep;
+use std::time::Duration;
 
 pub struct AppState {
     pub config: config::Config,
@@ -42,10 +46,7 @@ pub struct AppState {
 impl AppState {
     fn new(db: Addr<DbExecutor>) -> AppState {
         let config: config::Config = config::Config::from_file();
-        AppState {
-            config: config,
-            db: db,
-        }
+        AppState { config, db }
     }
 }
 
@@ -76,6 +77,7 @@ fn main() {
     let log_level = app_state.config.log_level.clone();
 
     let state: web::Data<AppState> = web::Data::new(app_state);
+    let arc_state = Arc::new(state.clone());
 
     // Check if set env for logging
     match std::env::var("RUST_LOG") {
@@ -86,9 +88,11 @@ fn main() {
     };
     env_logger::init();
 
-    let ping = services::ping::Ping::new(state.clone()).start();
+    //    let ping = services::ping::Ping::new(state.clone()).start();
 
-    info!("CPU's num {}", num_cpus::get());
+    debug!("CPU's num {}", num_cpus::get());
+
+    thread::spawn(move || services::ping::ping_fn(arc_state.clone()));
 
     let mut server = HttpServer::new(move || {
         App::new()

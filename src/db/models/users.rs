@@ -54,13 +54,21 @@ impl Handler<FindUser> for DbExecutor {
     fn handle(&mut self, actor_user: FindUser, ctx: &mut Self::Context) -> Self::Result {
         use crate::db::schema::users::dsl::*;
         log::info!("Get user from email {}", &actor_user.email);
-
         match users
             .filter(email.eq(&actor_user.email))
             .limit(2)
             .load::<User>(&self.pool.get().unwrap())
         {
-            Ok(mut items) => Ok(items.pop().unwrap()),
+            Ok(mut items) => {
+                if items.len() > 0 {
+                    Ok(items.pop().unwrap())
+                } else {
+                    Err(std::io::Error::new(
+                        io::ErrorKind::NotFound,
+                        "User is not found",
+                    ))
+                }
+            }
             Err(_) => Err(io::Error::new(io::ErrorKind::Other, "Database error")),
         }
     }
