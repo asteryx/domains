@@ -1,6 +1,9 @@
 
-install:
-	sudo apt install libmysqlclient-dev libsqlite3-dev libpq-dev && cargo install systemfd cargo-watch diesel_cli && cd src/ng && npm install
+build:
+	sudo apt install libsqlite3-dev libpq-dev \
+	&& cargo install --force systemfd cargo-watch diesel_cli --no-default-features --features sqlite \
+	&& make migration run
+# 	&& cd src/ng && npm install
 migration:
 	./migration.sh $(MAKECMDGOALS)
 start:
@@ -9,5 +12,3 @@ ngbuild:
 	cd src/ng/ && npm run watch
 print-schema:
 	diesel --database-url db.sqlite print-schema
-%:
-	@:

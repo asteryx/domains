@@ -1,10 +1,13 @@
 use crate::{db, AppState};
 extern crate signal_hook;
+use crate::db::models::domains::{Domain, DomainStatus};
+use crate::db::models::users::User;
 use actix::prelude::*;
 use actix::utils::IntervalFunc;
 use actix_web::{web, web::Data};
+use env_logger::Logger;
 use signal_hook::flag as signal_flag;
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -105,12 +108,21 @@ pub fn ping_fn(state: Arc<web::Data<AppState>>) {
     dbg!(&state);
 
     loop {
-        println!("11111111111111111111");
-        error!("qqqqqqqqqqqqqq");
-        &state.db.do_send(db::models::users::FindUser {
-            email: "a@aa.com".to_string(),
-        });
+        println!("Start in {:?}", Instant::now());
 
+        let result: Result<Vec<Domain>, Error> = state
+            .db
+            .send(db::models::domains::FindDomain {
+                name: None,
+                status: DomainStatus::Enabled,
+            })
+            .wait()
+            .map_err(|err| {
+                error!("Error: {}", err);
+                Error::new(ErrorKind::Interrupted, err)
+            })
+            .and_then(|result| result);
+        dbg!(result);
         sleep(Duration::from_secs(20));
     }
 }

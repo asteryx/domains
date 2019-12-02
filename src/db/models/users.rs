@@ -1,3 +1,4 @@
+use crate::db::schema::users;
 use crate::db::DbExecutor;
 use crate::hashers::PBKDF2PasswordHasher;
 use actix::{Handler, Message};
@@ -7,7 +8,7 @@ use std::io;
 use std::io::Error;
 use std::ptr::hash;
 
-#[derive(Queryable, Debug, Serialize, Deserialize)]
+#[derive(Identifiable, Queryable, Debug, Serialize, Deserialize)]
 pub struct User {
     pub id: i32,
     pub email: String,
@@ -51,11 +52,12 @@ impl Message for FindUser {
 impl Handler<FindUser> for DbExecutor {
     type Result = io::Result<User>;
 
-    fn handle(&mut self, actor_user: FindUser, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, find_user: FindUser, ctx: &mut Self::Context) -> Self::Result {
         use crate::db::schema::users::dsl::*;
-        log::info!("Get user from email {}", &actor_user.email);
+
+        log::info!("Get user from email {}", &find_user.email);
         match users
-            .filter(email.eq(&actor_user.email))
+            .filter(email.eq(&find_user.email))
             .limit(2)
             .load::<User>(&self.pool.get().unwrap())
         {
