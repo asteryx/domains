@@ -4,6 +4,7 @@ use crate::db::models::domains::{Domain, DomainStatus};
 use crate::db::models::users::User;
 use actix::prelude::*;
 use actix::utils::IntervalFunc;
+use actix_web::client;
 use actix_web::{web, web::Data};
 use env_logger::Logger;
 use signal_hook::flag as signal_flag;
@@ -106,6 +107,8 @@ impl Actor for Ping {
 
 pub fn ping_fn(state: Arc<web::Data<AppState>>) {
     dbg!(&state);
+    let client = client::Client::new();
+    //    let r_client = reqwest::blocki
 
     loop {
         println!("Start in {:?}", Instant::now());
@@ -117,12 +120,30 @@ pub fn ping_fn(state: Arc<web::Data<AppState>>) {
                 status: DomainStatus::Enabled,
             })
             .wait()
-            .map_err(|err| {
-                error!("Error: {}", err);
-                Error::new(ErrorKind::Interrupted, err)
-            })
+            .map_err(|err| Error::new(ErrorKind::Interrupted, err))
             .and_then(|result| result);
-        dbg!(result);
-        sleep(Duration::from_secs(20));
+
+        if let Ok(domains) = result {
+            for domain in &domains {
+                println!("{}", &domain.url);
+                //                let body = reqwest::blocking::get("https://www.rust-lang.org")
+                //                    .unwrap()
+                //                    .text()
+                //                    .unwrap();
+                //                &client
+                //                    .get(&domain.url)
+                //                    .header("User-Agent", "Actix-web")
+                //                    .send()
+                //                    .wait()
+                //                    .map_err(|err| dbg!(err))
+                //                    .and_then(|response| {
+                //                        println!("Response: {:?}", response);
+                //                        Ok(())
+                //                    });
+                //                dbg!(request);
+            }
+        }
+
+        sleep(Duration::from_secs(30));
     }
 }
