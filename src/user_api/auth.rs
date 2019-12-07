@@ -16,12 +16,12 @@ pub struct Login {
     password: String,
 }
 
-pub fn login(
+pub async fn login(
     login: web::Json<Login>,
     req: HttpRequest,
     data: web::Data<AppState>,
-) -> impl Future<Item = HttpResponse, Error = ErrorResponse> {
-    data.db
+) -> Result<HttpResponse, ErrorResponse> {
+    let res = data.db
         .send(db::models::users::FindUser {
             email: login.email.clone(),
         })
@@ -30,11 +30,11 @@ pub fn login(
             Ok(user) => {
                 dbg!(&user);
                 if user.check_password(&*login.password) {
-                    ok(HttpResponse::Ok()
+                    Ok(HttpResponse::Ok()
                         .content_type("application/json")
                         .json(json!(user)))
                 } else {
-                    err(ErrorResponse {
+                    Err(ErrorResponse {
                         msg: "Username/password didn't match".to_string(),
                         status: 400,
                     })
@@ -42,37 +42,18 @@ pub fn login(
             }
             Err(_) => {
                 //                dbg!(e);
-                err(ErrorResponse {
+                Err(ErrorResponse {
                     msg: "Username/password didn't match".to_string(),
                     status: 400,
                 })
             }
         })
+    ;
 
-    //    let count_users: usize = results.iter().count();
-    //
-    //    if count_users == 1 {
-    //        let user = &results.pop().expect("Error pop user from users array");
-    //
-    //        if user.check_password(&*login.password) {
-    //            return ok(HttpResponse::Ok()
-    //                .content_type("application/json")
-    //                .json(json!(user)));
-    //        };
-    //    } else if count_users > 1 {
-    //        log::error!("Too many users selected with username {}", &login.email);
-    //    }
-
-    //    err(ErrorResponse {
-    //        msg: "Temporary technical problems on the server".to_string(),
-    //        status: 500,
-    //    })
-    // If db is no user or password invalid
-    //    dbg!("not used actors");
-    //    err(ErrorResponse {
-    //        msg: "Username/password didn't match".to_string(),
-    //        status: 400,
-    //    })
+    Err(ErrorResponse {
+                    msg: "Username/password didn't match".to_string(),
+                    status: 400,
+                })
 }
 
 // pub fn register (pl: web::Payload) -> impl Future<Item = HttpResponse, Error = Error> {

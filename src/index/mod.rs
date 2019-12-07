@@ -147,7 +147,7 @@ const ERROR_500: &str = "
 ";
 
 
-pub fn index(_req: HttpRequest) -> impl Future<Item = HttpResponse, Error = Error> {
+pub async fn index(_req: HttpRequest) -> Result<HttpResponse, Error> {
     let mut tera = Tera::default();
     let mut context = Context::new();  
     
@@ -162,9 +162,10 @@ pub fn index(_req: HttpRequest) -> impl Future<Item = HttpResponse, Error = Erro
         tera.render("error500", &context).expect("Error render \"error 500\" page.")}
         );
     
-    ok(HttpResponse::Ok()
+    Ok(HttpResponse::Ok()
             .content_type("text/html")
-            .body(rendered))
+           .body(rendered)
+    )
 }
 
 // use actix_web::{fs::NamedFile, HttpRequest, Error, Result};

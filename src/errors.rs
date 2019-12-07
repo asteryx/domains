@@ -19,7 +19,7 @@ impl Display for ErrorResponse {
 
 impl ResponseError for ErrorResponse {
     // builds the actual response to send back when an error occurs
-    fn render_response(&self) -> HttpResponse {
+    fn error_response(&self) -> HttpResponse {
         let err_json = json!({ "msg": self.msg });
 
         HttpResponse::build(StatusCode::from_u16(self.status).unwrap()).json(err_json)

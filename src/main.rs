@@ -12,6 +12,10 @@ extern crate dotenv;
 extern crate listenfd;
 extern crate serde;
 extern crate tera;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
+
 use actix::prelude::*;
 use actix_files as fs;
 use actix_web::{client, middleware, web, App, HttpServer};
@@ -19,6 +23,11 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use listenfd::ListenFd;
 use log::Level;
 use std::thread;
+use crate::db::DbExecutor;
+use std::sync::Arc;
+use std::thread::sleep;
+use std::time::Duration;
+use std::io;
 
 mod config;
 mod db;
@@ -44,7 +53,8 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-fn main() {
+#[actix_rt::main]
+async fn main() -> io::Result<()>{
     let mut listenfd = ListenFd::from_env();
 
     let sys = System::builder()
@@ -79,10 +89,10 @@ fn main() {
         App::new()
             .register_data(state.clone())
             .wrap(middleware::Logger::default())
-            .service(fs::Files::new("/static", "src/static/").show_files_listing())
-            .service(fs::Files::new("/ng", "src/ng/dist/").show_files_listing())
-            .service(router::user_api_scope("api_user"))
-            .service(web::resource("/").route(web::get().to_async(index::index)))
+            //            .service(fs::Files::new("/static", "src/static/").show_files_listing())
+            //            .service(fs::Files::new("/ng", "src/ng/dist/").show_files_listing())
+            //            .service(router::user_api_scope("api_user"))
+            .service(web::resource("/").route(web::get().to(index::index)))
     });
 
     let server_ip = match std::env::var("SERVER_ADDR") {
@@ -102,5 +112,5 @@ fn main() {
         server.bind(server_address).unwrap()
     };
     server.start();
-    sys.run();
+    sys.run()
 }

@@ -21,7 +21,7 @@ pub fn user_api_scope(path: &str) -> Scope {
                         .limit(1024)
                         .error_handler(json_error_handler),
                 )
-                .route(web::post().to_async(login)),
+                .route(web::post().to(login)),
         )
     // .service(web::resource("/path2").to_async(|| HttpResponse::Ok()))
     // .service(web::resource("/path3").to_async(|| HttpResponse::MethodNotAllowed()))
