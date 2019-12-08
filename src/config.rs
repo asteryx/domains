@@ -8,6 +8,8 @@ pub struct Config {
     pub database_url: String,
     pub log_level: String,
     pub ping_interval: u64, //in seconds
+    pub media_root: String,
+    pub image_format: String,
 }
 
 impl Default for Config {
@@ -16,6 +18,8 @@ impl Default for Config {
             database_url: "db.sqlite".to_string(),
             log_level: "ERROR".to_string(),
             ping_interval: 60,
+            media_root: "./media/".to_string(),
+            image_format: "png".to_string(),
         }
     }
 }

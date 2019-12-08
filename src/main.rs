@@ -12,7 +12,7 @@ extern crate serde;
 extern crate tera;
 use actix::prelude::*;
 use actix_files as fs;
-use actix_web::{middleware, web, App, HttpServer};
+use actix_web::{client, middleware, web, App, HttpServer};
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::SqliteConnection;
 use listenfd::ListenFd;
@@ -24,43 +24,24 @@ mod db;
 mod errors;
 mod hashers;
 mod index;
+mod jobs;
 mod router;
 mod services;
 mod share;
+mod state;
 mod user_api;
 
 #[macro_use]
 extern crate log;
 extern crate env_logger;
 
+use crate::db::models::domains::Domain;
 use crate::db::DbExecutor;
+use crate::services::ping::Ping;
+use crate::state::AppState;
 use std::sync::Arc;
 use std::thread::sleep;
-use std::time::Duration;
-
-pub struct AppState {
-    pub config: config::Config,
-    pub db: Addr<DbExecutor>,
-}
-
-impl AppState {
-    fn new(db: Addr<DbExecutor>) -> AppState {
-        let config: config::Config = config::Config::from_file();
-        AppState { config, db }
-    }
-}
-
-impl std::fmt::Debug for AppState {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-        fmt.debug_struct("AppState")
-            .field("config", &self.config)
-            .field(
-                "db",
-                &format_args!("Pool<ConnectionManager<SqliteConnection>>"),
-            )
-            .finish()
-    }
-}
+use std::time::{Duration, Instant};
 
 fn main() {
     let mut listenfd = ListenFd::from_env();
@@ -71,9 +52,10 @@ fn main() {
         .build();
 
     //    let db = SyncArbiter::start(num_cpus::get() * 3, move || db::DbExecutor::new());
-    let db = SyncArbiter::start(1, move || db::DbExecutor::new());
+    let db = SyncArbiter::start(4, move || db::DbExecutor::new());
+    let ping: Addr<Ping> = SyncArbiter::start(2, || Ping::new());
 
-    let app_state: AppState = AppState::new(db);
+    let app_state: AppState = AppState::new(db, ping);
     let log_level = app_state.config.log_level.clone();
 
     let state: web::Data<AppState> = web::Data::new(app_state);
@@ -88,11 +70,9 @@ fn main() {
     };
     env_logger::init();
 
-    //    let ping = services::ping::Ping::new(state.clone()).start();
-
     debug!("CPU's num {}", num_cpus::get());
 
-    thread::spawn(move || services::ping::ping_fn(arc_state.clone()));
+    thread::spawn(move || jobs::ping_fn(arc_state.clone()));
 
     let mut server = HttpServer::new(move || {
         App::new()

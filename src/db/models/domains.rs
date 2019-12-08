@@ -54,7 +54,7 @@ impl diesel_deserialize::FromSql<Integer, Sqlite> for DomainStatus {
     }
 }
 
-#[derive(Associations, Identifiable, Queryable, Debug, Serialize, Deserialize)]
+#[derive(Associations, Identifiable, Queryable, Debug, Serialize, Deserialize, Clone)]
 #[belongs_to(User, foreign_key = "author")]
 pub struct Domain {
     pub id: i32,
