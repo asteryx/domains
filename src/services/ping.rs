@@ -197,7 +197,7 @@ impl Handler<PingRequest> for Ping {
                         Err(err) => {
                             eprintln!("{}", err);
                             eprintln!("need remove {}", &full_path);
-                            sleep(Duration::from_secs(300));
+
                             fs::remove_file(&full_path).unwrap();
                             Ok(())
                         }
