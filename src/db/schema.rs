@@ -1,19 +1,21 @@
 table! {
-    domains (id) {
+    domain (id) {
         id -> Integer,
         name -> Text,
         url -> Text,
-        status -> Integer,
+        state -> Integer,
         author -> Integer,
     }
 }
 
 table! {
-    domains_status (id) {
+    domain_status (id) {
         id -> Integer,
-        date -> Text,
+        date -> Timestamp,
         loading_time -> Integer,
+        status_code -> Integer,
         headers -> Text,
+        filename -> Text,
         domain_id -> Integer,
     }
 }
@@ -27,11 +29,11 @@ table! {
     }
 }
 
-joinable!(domains -> users (author));
-joinable!(domains_status -> domains (domain_id));
+joinable!(domain -> users (author));
+joinable!(domain_status -> domain (domain_id));
 
 allow_tables_to_appear_in_same_query!(
-    domains,
-    domains_status,
+    domain,
+    domain_status,
     users,
 );

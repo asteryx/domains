@@ -1,12 +1,11 @@
 use crate::{db, AppState};
 extern crate chrono;
 extern crate signal_hook;
-use crate::db::models::domains::{Domain, DomainStatus};
+use crate::db::models::domains::{Domain, InsertDomainStatusRequest};
 use crate::db::models::users::User;
 use crate::db::DbExecutor;
 use actix::prelude::*;
 use actix::utils::IntervalFunc;
-use actix_web::client;
 use actix_web::{web, web::Data};
 use chrono::{DateTime, Duration as ChronoDuration, Utc};
 use env_logger::Logger;
@@ -17,6 +16,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{self, Write};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
+use std::ops::Add;
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -139,21 +139,26 @@ impl Handler<PingRequest> for Ping {
     type Result = Result<bool, IoError>;
 
     fn handle(&mut self, msg: PingRequest, ctx: &mut SyncContext<Self>) -> Self::Result {
-        let dir_to_save = msg.state.config.media_root.clone() + &msg.domain.name + "/";
+        let media_root = &msg.state.config.media_root;
 
-        fs::create_dir_all(&dir_to_save).unwrap();
+        let folders = format!("{}{}", &media_root, &msg.domain.name);
+        fs::create_dir_all(&folders).unwrap();
 
         let now = Utc::now();
-
         let timestamp = format!("{}", now.timestamp());
-        let filename =
-            "".to_string() + &dir_to_save + &timestamp + "." + &msg.state.config.image_format;
+
+        let filename = format!(
+            "{}/{}.{}",
+            &msg.domain.name, &timestamp, &msg.state.config.image_format
+        );
 
         let result = self.client.head(&msg.domain.url).send().unwrap();
-        dbg!(result.text());
+        let duration_since = Utc::now().signed_duration_since(now).num_milliseconds();
 
-        let duration_since = Utc::now().signed_duration_since(now);
-        dbg!(duration_since.num_milliseconds());
+        let headers_str = format!("{:#?}", result.headers());
+        let status = result.status();
+
+        let full_path = format!("{}{}", &media_root, &filename);
 
         let command_result = Command::new("wkhtmltoimage".to_string())
             .arg("--height")
@@ -170,13 +175,28 @@ impl Handler<PingRequest> for Ping {
             .arg("--log-level")
             .arg("error")
             .arg(&msg.domain.url)
-            .arg(&filename)
+            .arg(&full_path)
             .spawn();
-        if let Ok(result) = command_result {
-            //            msg.state.db.send()
+
+        if let Ok(command_result) = command_result {
+            msg.state
+                .db
+                .send(InsertDomainStatusRequest {
+                    date: now.naive_utc(),
+                    loading_time: duration_since as i32,
+                    headers: headers_str,
+                    status_code: u16::from(status) as i32,
+                    filename: filename,
+                    domain_id: msg.domain.id,
+                })
+                .map_err(|err| {
+                    eprint!("{}", err);
+                    eprintln!("need remove {}", &full_path);
+                    fs::remove_file(&full_path).unwrap();
+                })
+                .wait();
         }
 
-        sleep(Duration::from_secs(5));
         Ok(true)
     }
 }

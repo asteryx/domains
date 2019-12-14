@@ -1,14 +1,16 @@
 -- Your SQL goes here
 
-CREATE TABLE domains_status (
+CREATE TABLE domain_status (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    date VARCHAR DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    date DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
     loading_time INTEGER DEFAULT 0 NOT NULL,
+    status_code INTEGER DEFAULT 0 NOT NULL,
     headers VARCHAR NOT NULL,
+    filename VARCHAR NOT NULL,
     domain_id INTEGER NOT NULL,
-    FOREIGN KEY(domain_id) REFERENCES domains(id)
+    FOREIGN KEY(domain_id) REFERENCES domain(id)
 );
 
-CREATE UNIQUE INDEX domains_status_date_unique_index ON domains_status (
+CREATE INDEX domain_status_date_index ON domain_status (
 	date ASC
 );

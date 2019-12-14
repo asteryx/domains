@@ -7,7 +7,7 @@ build:
 migration:
 	./migration.sh $(MAKECMDGOALS)
 start:
-	DATABASE_URL="db.sqlite" RUST_BACKTRACE=1 systemfd --no-pid -s http::8000 -- cargo watch -i /media/ -x run
+	DATABASE_URL="db.sqlite" RUST_BACKTRACE=1 systemfd --no-pid -s http::8000 -- cargo watch -w src/ -d 0.3 -x run
 ngbuild:
 	cd src/ng/ && npm run watch
 print-schema:

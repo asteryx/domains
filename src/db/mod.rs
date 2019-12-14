@@ -52,7 +52,7 @@ pub fn init_pool(config: &Config) -> Pool<ConnectionManager<SqliteConnection>> {
     let manager: ConnectionManager<SqliteConnection> =
         ConnectionManager::<SqliteConnection>::new(db_url);
     Pool::builder()
-        .max_size(6)
+        .max_size(10)
         .build(manager)
         .expect("Failed to create pool.")
 }

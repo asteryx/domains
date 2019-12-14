@@ -1,4 +1,4 @@
-use crate::db::models::domains::{Domain, DomainStatus, FindDomain};
+use crate::db::models::domains::{Domain, DomainState, FindDomain};
 use crate::services::ping::PingRequest;
 use crate::AppState;
 use actix::prelude::*;
@@ -11,14 +11,12 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 pub fn ping_fn(state: Arc<web::Data<AppState>>) {
-    println!("Start in {:?}", Instant::now());
-
     loop {
         let result: Result<Vec<Domain>, IoError> = state
             .db
             .send(FindDomain {
                 name: None,
-                status: DomainStatus::Enabled,
+                status: DomainState::Enabled,
             })
             .wait()
             .map_err(|err| IoError::new(ioErrorKind::Interrupted, err))
