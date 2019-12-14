@@ -14,7 +14,6 @@ use actix::prelude::*;
 use actix_files as fs;
 use actix_web::{client, middleware, web, App, HttpServer};
 use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::SqliteConnection;
 use listenfd::ListenFd;
 use log::Level;
 use std::thread;
