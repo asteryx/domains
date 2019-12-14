@@ -176,26 +176,34 @@ impl Handler<PingRequest> for Ping {
             .arg("error")
             .arg(&msg.domain.url)
             .arg(&full_path)
-            .spawn();
+            .status();
 
         if let Ok(command_result) = command_result {
-            msg.state
-                .db
-                .send(InsertDomainStatusRequest {
-                    date: now.naive_utc(),
-                    loading_time: duration_since as i32,
-                    headers: headers_str,
-                    status_code: u16::from(status) as i32,
-                    filename: filename,
-                    domain_id: msg.domain.id,
-                })
-                .map_err(|err| {
-                    eprint!("{}", err);
-                    eprintln!("need remove {}", &full_path);
-                    fs::remove_file(&full_path).unwrap();
-                })
-                .wait();
-        }
+            if command_result.success() {
+                msg.state
+                    .db
+                    .send(InsertDomainStatusRequest {
+                        date: now.naive_utc(),
+                        loading_time: duration_since as i32,
+                        headers: headers_str,
+                        status_code: u16::from(status) as i32,
+                        filename: filename,
+                        domain_id: msg.domain.id,
+                    })
+                    .wait()
+                    .map_err(|err| IoError::new(IoErrorKind::Interrupted, err))
+                    .and_then(|result| match result {
+                        Ok(_) => Ok(()),
+                        Err(err) => {
+                            eprintln!("{}", err);
+                            eprintln!("need remove {}", &full_path);
+                            sleep(Duration::from_secs(300));
+                            fs::remove_file(&full_path).unwrap();
+                            Ok(())
+                        }
+                    });
+            }
+        };
 
         Ok(true)
     }
