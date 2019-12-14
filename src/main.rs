@@ -83,10 +83,21 @@ fn main() {
             .service(web::resource("/").route(web::get().to_async(index::index)))
     });
 
+    let server_ip = match std::env::var("SERVER_ADDR") {
+        Ok(var) => var,
+        Err(_) => "127.0.0.1".to_string(),
+    };
+    let port = match std::env::var("SERVER_PORT") {
+        Ok(var) => var,
+        Err(_) => "8000".to_string(),
+    };
+
+    let server_address = format!("{}:{}", server_ip, port);
+    println!("{}", &server_address);
     server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
         server.listen(l).unwrap()
     } else {
-        server.bind("127.0.0.1:8000").unwrap()
+        server.bind(server_address).unwrap()
     };
     server.start();
     sys.run();
