@@ -20,10 +20,7 @@ impl std::fmt::Debug for AppState {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
         fmt.debug_struct("AppState")
             .field("config", &self.config)
-            .field(
-                "db",
-                &format_args!("Pool<ConnectionManager<SqliteConnection>>"),
-            )
+            .field("db", &format_args!("Pool<ConnectionManager<PgConnection>>"))
             .field("ping", &format_args!("Addr<Ping>"))
             .finish()
     }

@@ -15,7 +15,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Config {
         Config {
-            database_url: "db.sqlite".to_string(),
+            database_url: "postgres://domains:defaultpassword@localhost:5432/domains".to_string(),
             log_level: "ERROR".to_string(),
             ping_interval: 60,
             media_root: "./media/".to_string(),

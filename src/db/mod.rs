@@ -5,7 +5,7 @@ use crate::config::Config;
 use crate::AppState;
 use actix::{Actor, Addr, SyncArbiter, SyncContext};
 use actix_web::web;
-use diesel::prelude::SqliteConnection;
+use diesel::prelude::PgConnection;
 use diesel::r2d2;
 use diesel::r2d2::{ConnectionManager, Error, Pool};
 use dotenv;
@@ -18,7 +18,7 @@ pub enum DbError {
 }
 
 pub struct DbExecutor {
-    pool: Pool<ConnectionManager<SqliteConnection>>,
+    pool: Pool<ConnectionManager<PgConnection>>,
 }
 
 unsafe impl Send for DbExecutor {}
@@ -35,7 +35,7 @@ impl DbExecutor {
     }
     pub fn get_connection(
         &self,
-    ) -> Result<r2d2::PooledConnection<ConnectionManager<SqliteConnection>>, DbError> {
+    ) -> Result<r2d2::PooledConnection<ConnectionManager<PgConnection>>, DbError> {
         match self.pool.get() {
             Ok(conn) => Ok(conn),
             Err(_) => Err(DbError::GetConnectionError),
@@ -43,14 +43,13 @@ impl DbExecutor {
     }
 }
 
-pub fn init_pool(config: &Config) -> Pool<ConnectionManager<SqliteConnection>> {
+pub fn init_pool(config: &Config) -> Pool<ConnectionManager<PgConnection>> {
     let db_url = match std::env::var("DATABASE_URL") {
         Ok(res) => res,
         Err(_) => config.database_url.to_string(),
     };
 
-    let manager: ConnectionManager<SqliteConnection> =
-        ConnectionManager::<SqliteConnection>::new(db_url);
+    let manager: ConnectionManager<PgConnection> = ConnectionManager::<PgConnection>::new(db_url);
     Pool::builder()
         .max_size(10)
         .build(manager)

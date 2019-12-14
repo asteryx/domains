@@ -7,10 +7,10 @@ use actix::{Handler, Message};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use diesel::backend::Backend;
 use diesel::deserialize as diesel_deserialize;
+use diesel::pg::Pg;
 use diesel::prelude::*;
 use diesel::serialize as diesel_serialize;
 use diesel::sql_types::Integer;
-use diesel::sqlite::Sqlite;
 use serde_derive::{Deserialize, Serialize};
 use std::io;
 use std::io::prelude::*;
@@ -44,15 +44,17 @@ where
     }
 }
 
-impl diesel_deserialize::FromSql<Integer, Sqlite> for DomainState {
-    fn from_sql(bytes: Option<&<Sqlite as Backend>::RawValue>) -> diesel_deserialize::Result<Self> {
-        Ok(
-            match <i32 as diesel_deserialize::FromSql<Integer, Sqlite>>::from_sql(bytes) {
-                Ok(1) => DomainState::Enabled,
-                Ok(2) => DomainState::Disabled,
-                _ => DomainState::Removed,
-            },
-        )
+impl<DB> diesel_deserialize::FromSql<Integer, DB> for DomainState
+where
+    DB: Backend,
+    i32: diesel_deserialize::FromSql<Integer, DB>,
+{
+    fn from_sql(bytes: Option<&DB::RawValue>) -> diesel_deserialize::Result<Self> {
+        match i32::from_sql(bytes) {
+            Ok(1) => Ok(DomainState::Enabled),
+            Ok(2) => Ok(DomainState::Disabled),
+            _ => Ok(DomainState::Removed),
+        }
     }
 }
 

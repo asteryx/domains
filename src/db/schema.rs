@@ -1,31 +1,31 @@
 table! {
     domain (id) {
-        id -> Integer,
-        name -> Text,
-        url -> Text,
-        state -> Integer,
-        author -> Integer,
+        id -> Int4,
+        name -> Varchar,
+        url -> Varchar,
+        state -> Int4,
+        author -> Int4,
     }
 }
 
 table! {
     domain_status (id) {
-        id -> Integer,
+        id -> Int4,
         date -> Timestamp,
-        loading_time -> Integer,
-        status_code -> Integer,
-        headers -> Text,
-        filename -> Text,
-        domain_id -> Integer,
+        loading_time -> Int4,
+        status_code -> Int4,
+        headers -> Varchar,
+        filename -> Varchar,
+        domain_id -> Int4,
     }
 }
 
 table! {
     users (id) {
-        id -> Integer,
-        email -> Text,
-        password -> Text,
-        name -> Text,
+        id -> Int4,
+        email -> Varchar,
+        password -> Varchar,
+        name -> Varchar,
     }
 }
 
