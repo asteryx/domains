@@ -19,6 +19,7 @@ pub enum DbError {
 
 pub struct DbExecutor {
     pool: Pool<ConnectionManager<PgConnection>>,
+    config: Config,
 }
 
 unsafe impl Send for DbExecutor {}
@@ -29,9 +30,9 @@ impl Actor for DbExecutor {
 
 impl DbExecutor {
     pub fn new() -> DbExecutor {
-        DbExecutor {
-            pool: init_pool(&Config::from_file()),
-        }
+        let config = Config::from_file();
+        let pool = init_pool(&config);
+        DbExecutor { config, pool }
     }
     pub fn get_connection(
         &self,

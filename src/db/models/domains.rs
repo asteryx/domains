@@ -4,7 +4,7 @@ use crate::db::schema::domain_status;
 use crate::db::DbExecutor;
 use crate::hashers::PBKDF2PasswordHasher;
 use actix::{Handler, Message};
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use diesel::backend::Backend;
 use diesel::deserialize as diesel_deserialize;
 use diesel::pg::Pg;
@@ -107,13 +107,14 @@ impl Handler<FindDomain> for DbExecutor {
 #[table_name = "domain_status"]
 #[belongs_to(Domain, foreign_key = "domain_id")]
 pub struct DomainStatus {
-    pub id: usize,
-    pub date: String,
-    pub loading_time: NaiveDateTime,
-    pub status_code: usize,
+    pub id: i32,
+    pub date: NaiveDateTime,
+    pub loading_time: i32,
+    pub status_code: i32,
     pub headers: String,
+    pub filename: String,
     #[column_name = "domain_id"]
-    pub domain: usize,
+    pub domain: i32,
 }
 
 #[derive(Insertable, Serialize, Deserialize, Clone, Debug)]
@@ -128,11 +129,11 @@ pub struct InsertDomainStatusRequest {
 }
 
 impl Message for InsertDomainStatusRequest {
-    type Result = io::Result<()>;
+    type Result = io::Result<Vec<String>>;
 }
 
 impl Handler<InsertDomainStatusRequest> for DbExecutor {
-    type Result = io::Result<()>;
+    type Result = io::Result<Vec<String>>;
 
     fn handle(
         &mut self,
@@ -141,12 +142,43 @@ impl Handler<InsertDomainStatusRequest> for DbExecutor {
     ) -> Self::Result {
         use crate::db::schema::domain_status::dsl::*;
 
-        match diesel::insert_into(domain_status)
+        let inserted = match diesel::insert_into(domain_status)
             .values(&insert_msg)
             .execute(&self.pool.get().unwrap())
         {
-            Ok(_) => Ok(()),
-            Err(err) => Err(Error::new(ErrorKind::Other, err.to_string())),
+            Ok(_) => true,
+            Err(err) => false,
+        };
+
+        if inserted && self.config.rotate_domain_statuses {
+            //calculate date of greater self.config.rotate_days
+            let dt_rotate = Utc::now() - Duration::days(self.config.rotate_days as i64);
+
+            let subquery = domain_status
+                .filter(
+                    domain_id
+                        .eq(&insert_msg.domain_id)
+                        .and(date.lt(dt_rotate.naive_utc())),
+                )
+                .order(date.desc())
+                .select((id, filename))
+                .load::<(i32, String)>(&self.pool.get().unwrap())
+                .unwrap();
+
+            let ids = subquery.iter().map(|el| el.0).collect::<Vec<i32>>();
+            diesel::delete(domain_status.filter(id.eq_any(ids))).execute(&self.pool.get().unwrap());
+
+            let filenames = subquery
+                .iter()
+                .map(|el| el.1.to_string())
+                .collect::<Vec<String>>();
+
+            Ok(filenames)
+        } else {
+            Err(Error::new(
+                ErrorKind::Other,
+                "Cannot insert value".to_string(),
+            ))
         }
     }
 }

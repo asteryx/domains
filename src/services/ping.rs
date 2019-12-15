@@ -193,11 +193,19 @@ impl Handler<PingRequest> for Ping {
                     .wait()
                     .map_err(|err| IoError::new(IoErrorKind::Interrupted, err))
                     .and_then(|result| match result {
-                        Ok(_) => Ok(()),
+                        Ok(filenames_for_remove) => {
+                            filenames_for_remove
+                                .iter()
+                                .map(|name| {
+                                    fs::remove_file(format!("{}{}", &media_root, name)).unwrap();
+                                    ()
+                                })
+                                .collect::<Vec<()>>();
+                            Ok(())
+                        }
                         Err(err) => {
                             eprintln!("{}", err);
                             eprintln!("need remove {}", &full_path);
-
                             fs::remove_file(&full_path).unwrap();
                             Ok(())
                         }

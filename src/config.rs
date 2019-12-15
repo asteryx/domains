@@ -10,6 +10,8 @@ pub struct Config {
     pub ping_interval: u64, //in seconds
     pub media_root: String,
     pub image_format: String,
+    pub rotate_domain_statuses: bool,
+    pub rotate_days: i32,
 }
 
 impl Default for Config {
@@ -20,6 +22,8 @@ impl Default for Config {
             ping_interval: 60,
             media_root: "./media/".to_string(),
             image_format: "png".to_string(),
+            rotate_domain_statuses: true,
+            rotate_days: 2,
         }
     }
 }
