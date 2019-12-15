@@ -2,7 +2,7 @@ version: '3.5'
 
 services:
   postgres:
-    container_name: postgres_container
+    container_name: domains_postgres
     image: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-domains}
@@ -17,19 +17,30 @@ services:
       - postgres
     restart: unless-stopped
 
-  pgadmin:
-    container_name: pgadmin_container
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+  frontend:
+    container_name: domains_frontend
+    image: debian
+    tty: true
     volumes:
-       - pgadmin:/root/.pgadmin
-    ports:
-      - "${PGADMIN_PORT:-5050}:80"
-    networks:
-      - postgres
-    restart: unless-stopped
+      - ./src/ng:/app
+      - type: bind
+        source: ./docker-entrypoint.sh
+        target: /docker-entrypoint.sh
+    entrypoint: "/docker-entrypoint.sh frontend"
+
+#  pgadmin:
+#    container_name: pgadmin_container
+#    image: dpage/pgadmin4
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+#      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+#    volumes:
+#       - pgadmin:/root/.pgadmin
+#    ports:
+#      - "${PGADMIN_PORT:-5050}:80"
+#    networks:
+#      - postgres
+#    restart: unless-stopped
 
 networks:
   postgres:
@@ -37,4 +48,4 @@ networks:
 
 volumes:
     postgres:
-    pgadmin:
+#    pgadmin:

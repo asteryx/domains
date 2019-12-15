@@ -21,6 +21,9 @@ case ${1} in
   docker-compose --file docker-compose.yml up -d
   RUST_BACKTRACE=1 systemfd --no-pid -s http::8000 -- cargo watch -w src/ -d 0.3 -x run
   ;;
+  "stop")
+  docker-compose --file docker-compose.yml stop
+  ;;
   "test")
   echo ${POSTGRES_USER:-domains}
   ;;
