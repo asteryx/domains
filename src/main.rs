@@ -4,8 +4,10 @@ extern crate json;
 #[macro_use]
 extern crate diesel;
 #[macro_use]
-extern crate actix_web;
+extern crate actix;
 extern crate actix_files;
+extern crate actix_web;
+//extern crate actix_identity;
 extern crate dotenv;
 extern crate listenfd;
 extern crate serde;
