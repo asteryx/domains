@@ -16,6 +16,7 @@ case ${1} in
     apt-get install -y nodejs
     cd /app && npm install
   fi
+  echo fs.inotify.max_user_watches=524288 | tee -a /etc/sysctl.conf sysctl -p
  	cd /app && npm update
  	npm run watch
   ;;
