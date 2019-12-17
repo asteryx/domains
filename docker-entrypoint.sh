@@ -11,11 +11,12 @@ case ${1} in
   if [ $node_status -ne 0 ] || [ $npm_status -ne 0 ]
   then
     apt-get update
-    sudo apt-get install -y curl python-software-properties
-    curl -sL https://deb.nodesource.com/setup_13.x | sudo bash -
-    apt-get install -y nodejs npm
+    apt-get install -y curl
+    curl -sL https://deb.nodesource.com/setup_13.x | bash -
+    apt-get install -y nodejs
+    cd /app && npm install
   fi
- 	cd /app && npm install
+ 	cd /app && npm update
  	npm run watch
   ;;
 

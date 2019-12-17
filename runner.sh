@@ -23,6 +23,9 @@ case ${1} in
   "stop")
   docker-compose --file docker-compose.yml stop
   ;;
+  "down")
+  docker-compose --file docker-compose.yml down
+  ;;
   "test")
   echo ${POSTGRES_USER:-domains}
   ;;

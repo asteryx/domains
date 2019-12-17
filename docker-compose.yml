@@ -21,6 +21,8 @@ services:
     container_name: domains_frontend
     image: debian
     tty: true
+    environment:
+      NG_CLI_ANALYTICS: "ci"
     volumes:
       - frontend:/data/frontend
       - ./src/ng:/app
