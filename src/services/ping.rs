@@ -9,6 +9,7 @@ use actix::utils::IntervalFunc;
 use actix_web::{web, web::Data};
 use chrono::{DateTime, Duration as ChronoDuration, Utc};
 use env_logger::Logger;
+use futures::executor::block_on;
 use reqwest::blocking::Client;
 use signal_hook::flag as signal_flag;
 use std::env::temp_dir;
@@ -180,36 +181,33 @@ impl Handler<PingRequest> for Ping {
 
         if let Ok(command_result) = command_result {
             if command_result.success() {
-                msg.state
-                    .db
-                    .send(InsertDomainStatusRequest {
-                        date: now.naive_utc(),
-                        loading_time: duration_since as i32,
-                        headers: headers_str,
-                        status_code: u16::from(status) as i32,
-                        filename: filename,
-                        domain_id: msg.domain.id,
-                    })
-                    .wait()
-                    .map_err(|err| IoError::new(IoErrorKind::Interrupted, err))
-                    .and_then(|result| match result {
-                        Ok(filenames_for_remove) => {
-                            filenames_for_remove
-                                .iter()
-                                .map(|name| {
-                                    fs::remove_file(format!("{}{}", &media_root, name)).unwrap();
-                                    ()
-                                })
-                                .collect::<Vec<()>>();
-                            Ok(())
-                        }
-                        Err(err) => {
-                            eprintln!("{}", err);
-                            eprintln!("need remove {}", &full_path);
-                            fs::remove_file(&full_path).unwrap();
-                            Ok(())
-                        }
-                    });
+                block_on(msg.state.db.send(InsertDomainStatusRequest {
+                    date: now.naive_utc(),
+                    loading_time: duration_since as i32,
+                    headers: headers_str,
+                    status_code: u16::from(status) as i32,
+                    filename: filename,
+                    domain_id: msg.domain.id,
+                }))
+                .map_err(|err| IoError::new(IoErrorKind::Interrupted, err))
+                .and_then(|result| match result {
+                    Ok(filenames_for_remove) => {
+                        filenames_for_remove
+                            .iter()
+                            .map(|name| {
+                                fs::remove_file(format!("{}{}", &media_root, name)).unwrap();
+                                ()
+                            })
+                            .collect::<Vec<()>>();
+                        Ok(())
+                    }
+                    Err(err) => {
+                        eprintln!("{}", err);
+                        eprintln!("need remove {}", &full_path);
+                        fs::remove_file(&full_path).unwrap();
+                        Ok(())
+                    }
+                });
             }
         };
 

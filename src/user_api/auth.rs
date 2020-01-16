@@ -24,36 +24,37 @@ pub async fn login(
     let res = data.db
         .send(db::models::users::FindUser {
             email: login.email.clone(),
-        })
-        .from_err()
-        .and_then(move |res| match res {
-            Ok(user) => {
-                dbg!(&user);
-                if user.check_password(&*login.password) {
-                    Ok(HttpResponse::Ok()
-                        .content_type("application/json")
-                        .json(json!(user)))
-                } else {
-                    Err(ErrorResponse {
-                        msg: "Username/password didn't match".to_string(),
-                        status: 400,
-                    })
-                }
-            }
-            Err(_) => {
-                //                dbg!(e);
-                Err(ErrorResponse {
-                    msg: "Username/password didn't match".to_string(),
-                    status: 400,
-                })
-            }
-        })
+        }).await
+//        .from_err()
+//        .and_then(move |res| match res {
+//            Ok(user) => {
+//                dbg!(&user);
+//                if user.check_password(&*login.password) {
+//                    Ok(HttpResponse::Ok()
+//                        .content_type("application/json")
+//                        .json(json!(user)))
+//                } else {
+//                    Err(ErrorResponse {
+//                        msg: "Username/password didn't match".to_string(),
+//                        status: 400,
+//                    })
+//                }
+//            }
+//            Err(_) => {
+//                //                dbg!(e);
+//                Err(ErrorResponse {
+//                    msg: "Username/password didn't match".to_string(),
+//                    status: 400,
+//                })
+//            }
+//        })
     ;
+    dbg!(res);
 
     Err(ErrorResponse {
-                    msg: "Username/password didn't match".to_string(),
-                    status: 400,
-                })
+        msg: "Username/password didn't match".to_string(),
+        status: 400,
+    })
 }
 
 // pub fn register (pl: web::Payload) -> impl Future<Item = HttpResponse, Error = Error> {

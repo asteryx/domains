@@ -13,21 +13,22 @@ extern crate listenfd;
 extern crate serde;
 extern crate tera;
 #[macro_use]
-extern crate log;
 extern crate env_logger;
 
+use crate::db::models::domains::Domain;
+use crate::db::DbExecutor;
+use crate::services::ping::Ping;
+use crate::state::AppState;
 use actix::prelude::*;
 use actix_files as fs;
 use actix_web::{client, middleware, web, App, HttpServer};
 use diesel::r2d2::{ConnectionManager, Pool};
 use listenfd::ListenFd;
-use log::Level;
-use std::thread;
-use crate::db::DbExecutor;
-use std::sync::Arc;
-use std::thread::sleep;
-use std::time::Duration;
 use std::io;
+use std::sync::Arc;
+use std::thread;
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 
 mod config;
 mod db;
@@ -41,26 +42,9 @@ mod share;
 mod state;
 mod user_api;
 
-#[macro_use]
-extern crate log;
-extern crate env_logger;
-
-use crate::db::models::domains::Domain;
-use crate::db::DbExecutor;
-use crate::services::ping::Ping;
-use crate::state::AppState;
-use std::sync::Arc;
-use std::thread::sleep;
-use std::time::{Duration, Instant};
-
 #[actix_rt::main]
-async fn main() -> io::Result<()>{
+async fn main() -> io::Result<()> {
     let mut listenfd = ListenFd::from_env();
-
-    let sys = System::builder()
-        .stop_on_panic(true)
-        .name("domains")
-        .build();
 
     //    let db = SyncArbiter::start(num_cpus::get() * 3, move || db::DbExecutor::new());
     let db = SyncArbiter::start(2, move || db::DbExecutor::new());
@@ -82,16 +66,16 @@ async fn main() -> io::Result<()>{
     env_logger::init();
 
     debug!("CPU's num {}", num_cpus::get());
-
+    println!("spawn job");
     thread::spawn(move || jobs::ping_fn(arc_state.clone()));
 
     let mut server = HttpServer::new(move || {
         App::new()
-            .register_data(state.clone())
+            .app_data(state.clone())
             .wrap(middleware::Logger::default())
-            //            .service(fs::Files::new("/static", "src/static/").show_files_listing())
-            //            .service(fs::Files::new("/ng", "src/ng/dist/").show_files_listing())
-            //            .service(router::user_api_scope("api_user"))
+            .service(fs::Files::new("/static", "src/static/"))
+            .service(fs::Files::new("/ng", "src/ng/dist/").show_files_listing())
+            .service(router::user_api_scope("api_user"))
             .service(web::resource("/").route(web::get().to(index::index)))
     });
 
@@ -111,6 +95,5 @@ async fn main() -> io::Result<()>{
     } else {
         server.bind(server_address).unwrap()
     };
-    server.start();
-    sys.run()
+    server.run().await
 }

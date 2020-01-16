@@ -85,7 +85,7 @@ impl Handler<FindDomain> for DbExecutor {
     fn handle(&mut self, domain_msg: FindDomain, ctx: &mut Self::Context) -> Self::Result {
         use crate::db::schema::domain::dsl::*;
 
-        log::info!("Get domain from {:?}", &domain_msg);
+        info!("Get domain from {:?}", &domain_msg);
 
         let query_result = match &domain_msg.name {
             Some(domain_name) => domain
