@@ -13,7 +13,9 @@ extern crate listenfd;
 extern crate serde;
 extern crate tera;
 #[macro_use]
+extern crate log;
 extern crate env_logger;
+use log::Level;
 
 use crate::db::models::domains::Domain;
 use crate::db::DbExecutor;
@@ -23,12 +25,14 @@ use actix::prelude::*;
 use actix_files as fs;
 use actix_web::{client, middleware, web, App, HttpServer};
 use diesel::r2d2::{ConnectionManager, Pool};
+use env_logger::{builder, Builder};
 use listenfd::ListenFd;
 use std::io;
 use std::sync::Arc;
 use std::thread;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
+use tera::ast::ExprVal::StringConcat;
 
 mod config;
 mod db;
@@ -51,29 +55,35 @@ async fn main() -> io::Result<()> {
     let ping: Addr<Ping> = SyncArbiter::start(2, || Ping::new());
 
     let app_state: AppState = AppState::new(db, ping);
-    let log_level = app_state.config.log_level.clone();
+    let config_log_level = app_state.config.log_level.clone();
 
     let state: web::Data<AppState> = web::Data::new(app_state);
     let arc_state = Arc::new(state.clone());
 
+    let env_name = String::from("DOMAINS_LOGLEVEL");
     // Check if set env for logging
-    match std::env::var("RUST_LOG") {
+    match std::env::var(&env_name) {
         Ok(_) => (),
         Err(_) => {
-            std::env::set_var("RUST_LOG", format!("actix_web={}", log_level));
+            std::env::set_var(&env_name, format!("{}", config_log_level));
         }
     };
-    env_logger::init();
+    let mut builder = Builder::from_env(&env_name);
+    builder.init();
+
+    if let Ok(res) = std::env::var(&env_name) {
+        println!("Log level set is {}", res);
+    }
 
     debug!("CPU's num {}", num_cpus::get());
-    println!("spawn job");
     thread::spawn(move || jobs::ping_fn(arc_state.clone()));
 
     let mut server = HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
             .wrap(middleware::Logger::default())
-            .service(fs::Files::new("/static", "src/static/"))
+            .service(fs::Files::new("/static", "static/"))
+            .service(fs::Files::new("/media", "media/"))
             .service(fs::Files::new("/ng", "src/ng/dist/").show_files_listing())
             .service(router::user_api_scope("api_user"))
             .service(web::resource("/").route(web::get().to(index::index)))
@@ -89,7 +99,8 @@ async fn main() -> io::Result<()> {
     };
 
     let server_address = format!("{}:{}", server_ip, port);
-    println!("{}", &server_address);
+    debug!("{}", &server_address);
+
     server = if let Some(l) = listenfd.take_tcp_listener(0).unwrap() {
         server.listen(l).unwrap()
     } else {

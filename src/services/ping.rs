@@ -202,8 +202,8 @@ impl Handler<PingRequest> for Ping {
                         Ok(())
                     }
                     Err(err) => {
-                        eprintln!("{}", err);
-                        eprintln!("need remove {}", &full_path);
+                        error!("{}", err);
+                        error!("need remove {}", &full_path);
                         fs::remove_file(&full_path).unwrap();
                         Ok(())
                     }
