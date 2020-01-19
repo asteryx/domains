@@ -9,6 +9,7 @@ use futures::{future::err, future::ok, Future};
 use json::JsonValue;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{json, to_string_pretty};
+use std::sync::Mutex;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Login {
@@ -19,42 +20,38 @@ pub struct Login {
 pub async fn login(
     login: web::Json<Login>,
     req: HttpRequest,
-    data: web::Data<AppState>,
+    data: web::Data<Mutex<AppState>>,
 ) -> Result<HttpResponse, ErrorResponse> {
-    let res = data.db
+    let mut data = data.lock().unwrap();
+
+    let res = data
+        .db
         .send(db::models::users::FindUser {
             email: login.email.clone(),
-        }).await
-//        .from_err()
-//        .and_then(move |res| match res {
-//            Ok(user) => {
-//                dbg!(&user);
-//                if user.check_password(&*login.password) {
-//                    Ok(HttpResponse::Ok()
-//                        .content_type("application/json")
-//                        .json(json!(user)))
-//                } else {
-//                    Err(ErrorResponse {
-//                        msg: "Username/password didn't match".to_string(),
-//                        status: 400,
-//                    })
-//                }
-//            }
-//            Err(_) => {
-//                //                dbg!(e);
-//                Err(ErrorResponse {
-//                    msg: "Username/password didn't match".to_string(),
-//                    status: 400,
-//                })
-//            }
-//        })
-    ;
-    dbg!(res);
+        })
+        .await?;
 
-    Err(ErrorResponse {
-        msg: "Username/password didn't match".to_string(),
-        status: 400,
-    })
+    match res {
+        Ok(user) => {
+            if user.check_password(&login.password) {
+                Ok(HttpResponse::Ok()
+                    .content_type("application/json")
+                    .json(json!(user)))
+            } else {
+                Err(ErrorResponse {
+                    msg: "Username/password didn't match".to_string(),
+                    status: 400,
+                })
+            }
+        }
+        _ => {
+            //            Add check password
+            Err(ErrorResponse {
+                msg: "Username/password didn't match".to_string(),
+                status: 400,
+            })
+        }
+    }
 }
 
 // pub fn register (pl: web::Payload) -> impl Future<Item = HttpResponse, Error = Error> {

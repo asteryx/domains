@@ -28,7 +28,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use env_logger::{builder, Builder};
 use listenfd::ListenFd;
 use std::io;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
@@ -54,11 +54,12 @@ async fn main() -> io::Result<()> {
     let db = SyncArbiter::start(2, move || db::DbExecutor::new());
     let ping: Addr<Ping> = SyncArbiter::start(2, || Ping::new());
 
-    let app_state: AppState = AppState::new(db, ping);
+    let app_state: AppState = AppState::new(db.clone(), ping.clone());
+    let jobs_state: AppState = AppState::new(db.clone(), ping.clone());
     let config_log_level = app_state.config.log_level.clone();
 
-    let state: web::Data<AppState> = web::Data::new(app_state);
-    let arc_state = Arc::new(state.clone());
+    let state: web::Data<Mutex<AppState>> = web::Data::new(Mutex::new(app_state));
+    let arc_state = Arc::new(web::Data::new(jobs_state));
 
     let env_name = String::from("DOMAINS_LOGLEVEL");
     // Check if set env for logging
@@ -76,11 +77,16 @@ async fn main() -> io::Result<()> {
     }
 
     debug!("CPU's num {}", num_cpus::get());
-    thread::spawn(move || jobs::ping_fn(arc_state.clone()));
+    thread::spawn(move || jobs::ping_fn(arc_state));
 
     let mut server = HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
+            .app_data(
+                web::JsonConfig::default()
+                    .limit(1024)
+                    .error_handler(errors::json_error_handler),
+            )
             .wrap(middleware::Logger::default())
             .service(fs::Files::new("/static", "static/"))
             .service(fs::Files::new("/media", "media/"))

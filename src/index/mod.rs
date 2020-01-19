@@ -1,7 +1,6 @@
-use actix_web::{HttpResponse, HttpRequest, Error};
-use tera::{Tera, Context};
+use actix_web::{Error, HttpRequest, HttpResponse};
 use futures::{future::ok, Future};
-
+use tera::{Context, Tera};
 
 const ERROR_500: &str = "
 <html>
@@ -146,26 +145,25 @@ const ERROR_500: &str = "
 
 ";
 
-
 pub async fn index(_req: HttpRequest) -> Result<HttpResponse, Error> {
     let mut tera = Tera::default();
-    let mut context = Context::new();  
-    
+    let mut context = Context::new();
+
     context.insert("error", "Error");
     context.insert("text_error", "Uh oh, there seems to be a problem.");
 
-    tera.add_raw_template("error500", ERROR_500).expect("Error loading \"error 500\" template");
+    tera.add_raw_template("error500", ERROR_500)
+        .expect("Error loading \"error 500\" template");
 
-    tera.add_template_file("src/ng/dist/index.html", Some("index")).unwrap_or(());
+    tera.add_template_file("src/ng/dist/index.html", Some("index"))
+        .unwrap_or(());
 
-    let rendered = tera.render("index", &context).unwrap_or_else(|_err|{
-        tera.render("error500", &context).expect("Error render \"error 500\" page.")}
-        );
-    
-    Ok(HttpResponse::Ok()
-            .content_type("text/html")
-           .body(rendered)
-    )
+    let rendered = tera.render("index", &context).unwrap_or_else(|_err| {
+        tera.render("error500", &context)
+            .expect("Error render \"error 500\" page.")
+    });
+
+    Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
 }
 
 // use actix_web::{fs::NamedFile, HttpRequest, Error, Result};
