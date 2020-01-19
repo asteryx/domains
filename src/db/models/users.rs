@@ -39,6 +39,10 @@ impl User {
             _ => false,
         }
     }
+
+    pub fn password(&self) -> String {
+        self.password.clone()
+    }
 }
 
 pub struct FindUser {
@@ -73,5 +77,24 @@ impl Handler<FindUser> for DbExecutor {
             }
             Err(_) => Err(io::Error::new(io::ErrorKind::Other, "Database error")),
         }
+    }
+}
+
+pub struct UpdateUser {
+    pub id: i32,
+    pub email: String,
+    pub password: String,
+    pub name: String,
+}
+
+impl Message for UpdateUser {
+    type Result = io::Result<bool>;
+}
+
+impl Handler<UpdateUser> for DbExecutor {
+    type Result = io::Result<bool>;
+
+    fn handle(&mut self, msg: UpdateUser, ctx: &mut Self::Context) -> Self::Result {
+        Ok(true)
     }
 }
