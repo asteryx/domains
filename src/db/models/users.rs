@@ -39,10 +39,6 @@ impl User {
             _ => false,
         }
     }
-
-    pub fn password(&self) -> String {
-        self.password.clone()
-    }
 }
 
 pub struct FindUser {

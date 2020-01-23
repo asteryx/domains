@@ -5,13 +5,45 @@ use toml;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
-    pub database_url: String,
-    pub log_level: String,
-    pub ping_interval: u64, //in seconds
-    pub media_root: String,
-    pub image_format: String,
-    pub rotate_domain_statuses: bool,
-    pub rotate_days: i32,
+    database_url: String,
+    log_level: String,
+    ping_interval: u64, //in seconds
+    media_root: String,
+    image_format: String,
+    domain_statuses_rotation: bool,
+    domain_statuses_rotate_days: i32,
+    jwt_expiration_hours: u16,
+    jwt_secret_key: String,
+}
+
+impl Config {
+    pub fn database_url(&self) -> &String {
+        &self.database_url
+    }
+    pub fn log_level(&self) -> &String {
+        &self.log_level
+    }
+    pub fn ping_interval(&self) -> u64 {
+        self.ping_interval
+    }
+    pub fn media_root(&self) -> &String {
+        &self.media_root
+    }
+    pub fn image_format(&self) -> &String {
+        &self.image_format
+    }
+    pub fn domain_statuses_rotation(&self) -> bool {
+        self.domain_statuses_rotation
+    }
+    pub fn domain_statuses_rotate_days(&self) -> i32 {
+        self.domain_statuses_rotate_days
+    }
+    pub fn jwt_expiration_hours(&self) -> u16 {
+        self.jwt_expiration_hours
+    }
+    pub fn jwt_secret_key(&self) -> &String {
+        &self.jwt_secret_key
+    }
 }
 
 impl Default for Config {
@@ -22,8 +54,10 @@ impl Default for Config {
             ping_interval: 60,
             media_root: "./media/".to_string(),
             image_format: "png".to_string(),
-            rotate_domain_statuses: true,
-            rotate_days: 2,
+            domain_statuses_rotation: true,
+            domain_statuses_rotate_days: 2,
+            jwt_expiration_hours: 300,
+            jwt_secret_key: "Super test secret key".to_string(),
         }
     }
 }

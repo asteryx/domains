@@ -1,5 +1,6 @@
 use crate::db;
 use crate::errors::ErrorResponse;
+use crate::jwt::encode_token;
 use crate::AppState;
 use actix::prelude::*;
 use actix_web::{web, Error, HttpRequest, HttpResponse, ResponseError};
@@ -34,6 +35,8 @@ pub async fn login(
     match res {
         Ok(user) => {
             if user.check_password(&login.password) {
+                let token = encode_token(&data.config, &user)?;
+
                 Ok(HttpResponse::Ok()
                     .content_type("application/json")
                     .json(json!(user)))

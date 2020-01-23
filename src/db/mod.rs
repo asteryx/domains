@@ -47,7 +47,7 @@ impl DbExecutor {
 pub fn init_pool(config: &Config) -> Pool<ConnectionManager<PgConnection>> {
     let db_url = match std::env::var("DATABASE_URL") {
         Ok(res) => res,
-        Err(_) => config.database_url.to_string(),
+        Err(_) => config.database_url().clone(),
     };
 
     let manager: ConnectionManager<PgConnection> = ConnectionManager::<PgConnection>::new(db_url);

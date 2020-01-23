@@ -28,6 +28,6 @@ pub fn ping_fn(state: Arc<web::Data<AppState>>) {
                 });
             }
         };
-        sleep(Duration::from_secs(state.config.ping_interval));
+        sleep(Duration::from_secs(state.config.ping_interval()));
     }
 }

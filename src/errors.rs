@@ -1,3 +1,4 @@
+use crate::jwt;
 use actix::MailboxError;
 use actix_web::error::JsonPayloadError;
 use actix_web::http::StatusCode;
@@ -32,6 +33,16 @@ impl From<MailboxError> for ErrorResponse {
     fn from(error: MailboxError) -> Self {
         log::error!("Error in mailbox {}", error);
 
+        ErrorResponse {
+            msg: "Something went wrong. Please try again later".to_string(),
+            status: 500,
+        }
+    }
+}
+
+// TODO REFACTOR THIS
+impl From<jwt::JWTError> for ErrorResponse {
+    fn from(outer: jwt::JWTError) -> Self {
         ErrorResponse {
             msg: "Something went wrong. Please try again later".to_string(),
             status: 500,

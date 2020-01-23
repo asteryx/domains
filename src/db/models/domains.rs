@@ -150,9 +150,10 @@ impl Handler<InsertDomainStatusRequest> for DbExecutor {
             Err(err) => false,
         };
 
-        if inserted && self.config.rotate_domain_statuses {
+        if inserted && self.config.domain_statuses_rotation() {
             //calculate date of greater self.config.rotate_days
-            let dt_rotate = Utc::now() - Duration::days(self.config.rotate_days as i64);
+            let dt_rotate =
+                Utc::now() - Duration::days(self.config.domain_statuses_rotate_days() as i64);
 
             let subquery = domain_status
                 .filter(

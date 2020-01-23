@@ -7,7 +7,7 @@ use crate::db::DbExecutor;
 use actix::prelude::*;
 use actix::utils::IntervalFunc;
 use actix_web::{web, web::Data};
-use chrono::{DateTime, Duration as ChronoDuration, Utc};
+use chrono::{Duration as ChronoDuration, Utc};
 use env_logger::Logger;
 use futures::executor::block_on;
 use reqwest::blocking::Client;
@@ -140,7 +140,7 @@ impl Handler<PingRequest> for Ping {
     type Result = Result<bool, IoError>;
 
     fn handle(&mut self, msg: PingRequest, ctx: &mut SyncContext<Self>) -> Self::Result {
-        let media_root = &msg.state.config.media_root;
+        let media_root = msg.state.config.media_root();
 
         let folders = format!("{}{}", &media_root, &msg.domain.name);
         fs::create_dir_all(&folders).unwrap();
@@ -150,7 +150,9 @@ impl Handler<PingRequest> for Ping {
 
         let filename = format!(
             "{}/{}.{}",
-            &msg.domain.name, &timestamp, &msg.state.config.image_format
+            &msg.domain.name,
+            &timestamp,
+            &msg.state.config.image_format()
         );
 
         let result = self.client.head(&msg.domain.url).send().unwrap();
