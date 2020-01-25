@@ -40,12 +40,16 @@ impl From<MailboxError> for ErrorResponse {
     }
 }
 
-// TODO REFACTOR THIS
 impl From<jwt::JWTError> for ErrorResponse {
     fn from(outer: jwt::JWTError) -> Self {
+        let msg = match outer {
+            jwt::JWTError::TokenInvalid => "Token is invalid".to_string(),
+            jwt::JWTError::TokenExpired => "Token is expired".to_string(),
+        };
+
         ErrorResponse {
-            msg: "Something went wrong. Please try again later".to_string(),
-            status: 500,
+            msg: msg,
+            status: 400,
         }
     }
 }

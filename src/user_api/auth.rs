@@ -1,6 +1,6 @@
 use crate::db;
 use crate::errors::ErrorResponse;
-use crate::jwt::encode_token;
+use crate::jwt::{decode_token, encode_token};
 use crate::AppState;
 use actix::prelude::*;
 use actix_web::{web, Error, HttpRequest, HttpResponse, ResponseError};
@@ -11,11 +11,20 @@ use json::JsonValue;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{json, to_string_pretty};
 use std::sync::Mutex;
+use std::thread::sleep;
+use std::time::Duration;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Login {
     email: String,
     password: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct LoginResult {
+    token: String,
+    email: String,
+    name: String,
 }
 
 pub async fn login(
@@ -36,10 +45,18 @@ pub async fn login(
         Ok(user) => {
             if user.check_password(&login.password) {
                 let token = encode_token(&data.config, &user)?;
+                dbg!(&token);
+
+                //                let claims_data = decode_token(&data.config, &token)?;
+                //                dbg!(&claims_data);
 
                 Ok(HttpResponse::Ok()
                     .content_type("application/json")
-                    .json(json!(user)))
+                    .json(json!(LoginResult {
+                        token: token,
+                        email: user.email,
+                        name: user.name
+                    })))
             } else {
                 Err(ErrorResponse {
                     msg: "Username/password didn't match".to_string(),
