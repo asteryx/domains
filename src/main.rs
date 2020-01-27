@@ -7,6 +7,7 @@ extern crate diesel;
 extern crate actix;
 extern crate actix_files;
 extern crate actix_identity;
+extern crate actix_service;
 extern crate actix_web;
 extern crate dotenv;
 extern crate listenfd;
@@ -23,10 +24,12 @@ use crate::services::ping::Ping;
 use crate::state::AppState;
 use actix::prelude::*;
 use actix_files as fs;
-use actix_web::{client, middleware, web, App, HttpServer};
+use actix_identity::{CookieIdentityPolicy, IdentityService};
+use actix_web::{client, middleware as actix_middleware, web, App, HttpServer};
 use diesel::r2d2::{ConnectionManager, Pool};
 use env_logger::{builder, Builder};
 use listenfd::ListenFd;
+use middleware::AuthenticationService;
 use std::io;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -41,6 +44,7 @@ mod hashers;
 mod index;
 mod jobs;
 mod jwt;
+mod middleware;
 mod router;
 mod services;
 mod share;
@@ -88,7 +92,8 @@ async fn main() -> io::Result<()> {
                     .limit(1024)
                     .error_handler(errors::json_error_handler),
             )
-            .wrap(middleware::Logger::default())
+            .wrap(actix_middleware::Logger::default())
+            .wrap(AuthenticationService::default())
             .configure(router::configuration)
     });
 
