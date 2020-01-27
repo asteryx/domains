@@ -6,8 +6,8 @@ extern crate diesel;
 #[macro_use]
 extern crate actix;
 extern crate actix_files;
+extern crate actix_identity;
 extern crate actix_web;
-//extern crate actix_identity;
 extern crate dotenv;
 extern crate listenfd;
 extern crate serde;
@@ -89,11 +89,7 @@ async fn main() -> io::Result<()> {
                     .error_handler(errors::json_error_handler),
             )
             .wrap(middleware::Logger::default())
-            .service(fs::Files::new("/static", "static/"))
-            .service(fs::Files::new("/media", "media/"))
-            .service(fs::Files::new("/ng", "src/ng/dist/").show_files_listing())
-            .service(router::user_api_scope("api_user"))
-            .service(web::resource("/").route(web::get().to(index::index)))
+            .configure(router::configuration)
     });
 
     let server_ip = match std::env::var("SERVER_ADDR") {
