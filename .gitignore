@@ -13,4 +13,4 @@ config.toml
 /.idea/
 *.sqlite
 
-/media/
+/media/**
