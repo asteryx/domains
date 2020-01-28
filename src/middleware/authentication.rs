@@ -1,11 +1,15 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use crate::config::Config;
+use crate::jwt::{decode_token, Claims, JWTError};
+use crate::state::AppState;
 use actix_service::{Service, Transform};
-use actix_web::{dev::ServiceRequest, dev::ServiceResponse, Error};
+use actix_web::{dev::ServiceRequest, dev::ServiceResponse, Error, HttpMessage};
 use futures::future::{ok, Ready};
 use futures::Future;
 use std::rc::Rc;
+use std::sync::Mutex;
 
 // There are two steps in middleware processing.
 // 1. Middleware initialization, middleware factory gets called with
@@ -73,12 +77,22 @@ where
     fn call(&mut self, req: ServiceRequest) -> Self::Future {
         let headers = req.headers();
 
-        let auth_header = match headers.get("Authorization".to_string()) {
-            Some(h) => h.to_str().unwrap_or(""),
-            _ => "",
-        };
+        if let Some(auth_header) = headers.get("Authorization".to_string()) {
+            let parts: Vec<&str> = auth_header.to_str().unwrap_or("").split(" ").collect();
+            dbg!(&parts);
 
-        let parts: Vec<&str> = auth_header.split(" ").collect();
+            if parts.len() == 2 {
+                let name = parts[0];
+                let token = parts[1];
+                if let Some(app_state) = &req.app_data::<AppState>() {
+                    let opt_claims = get_claims(&app_state.config, name, token);
+                    dbg!(&opt_claims);
+                    if let Some(claims) = opt_claims {
+                        req.extensions_mut().insert::<Claims>(claims)
+                    }
+                }
+            }
+        };
 
         let fut = self.service.call(req);
 
@@ -88,5 +102,12 @@ where
             println!("Hi from response");
             Ok(res)
         })
+    }
+}
+
+fn get_claims(config: &Config, name: &str, raw_token: &str) -> Option<Claims> {
+    match decode_token(config, raw_token) {
+        Ok(token_data) => Some(token_data.claims),
+        _ => None,
     }
 }

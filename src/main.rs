@@ -63,7 +63,7 @@ async fn main() -> io::Result<()> {
     let jobs_state: AppState = AppState::new(db.clone(), ping.clone());
     let config_log_level = app_state.config.log_level().clone();
 
-    let state: web::Data<Mutex<AppState>> = web::Data::new(Mutex::new(app_state));
+    let state: web::Data<AppState> = web::Data::new(app_state);
     let arc_state = Arc::new(web::Data::new(jobs_state));
 
     let env_name = String::from("DOMAINS_LOGLEVEL");

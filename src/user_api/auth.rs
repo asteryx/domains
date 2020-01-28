@@ -1,6 +1,6 @@
 use crate::db;
 use crate::errors::ErrorResponse;
-use crate::jwt::{decode_token, encode_token};
+use crate::jwt::{decode_token, encode_token, Claims};
 use crate::AppState;
 use actix::prelude::*;
 use actix_web::{web, Error, HttpRequest, HttpResponse, ResponseError};
@@ -30,9 +30,13 @@ struct LoginResult {
 pub async fn login(
     login: web::Json<Login>,
     req: HttpRequest,
-    data: web::Data<Mutex<AppState>>,
+    data: web::Data<AppState>,
+    //    TODO add this to from request
+    //    claims: Claims,
 ) -> Result<HttpResponse, ErrorResponse> {
-    let mut data = data.lock().unwrap();
+    let exts = req.extensions();
+    let usr = exts.get::<Claims>();
+    dbg!(&usr);
 
     let res = data
         .db
