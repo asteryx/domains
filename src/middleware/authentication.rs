@@ -2,9 +2,12 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::config::Config;
+use crate::errors::ErrorResponse;
 use crate::jwt::{decode_token, Claims, JWTError};
 use crate::state::AppState;
 use actix_service::{Service, Transform};
+use actix_web::http::HeaderMap;
+use actix_web::web::Data;
 use actix_web::{dev::ServiceRequest, dev::ServiceResponse, Error, HttpMessage};
 use futures::future::{ok, Ready};
 use futures::Future;
@@ -59,6 +62,52 @@ pub struct AuthenticationMiddleware<S> {
     service: S,
 }
 
+impl<S> AuthenticationMiddleware<S> {
+    fn get_header_parts<'a>(&self, headers: &'a HeaderMap) -> Option<(&'a str, &'a str)> {
+        if let Some(auth_header) = headers.get("Authorization".to_string()) {
+            let parts: Vec<&str> = auth_header.to_str().unwrap_or("").split(" ").collect();
+            if parts.len() == 2 {
+                return Some((parts[0], parts[1]));
+            }
+        };
+        None
+    }
+
+    fn parse_claims(
+        &self,
+        config: &Config,
+        name: &str,
+        raw_token: &str,
+    ) -> Result<Claims, JWTError> {
+        let token_data = decode_token(config, raw_token);
+        match token_data {
+            Ok(tdata) => Ok(tdata.claims),
+            Err(err) => Err(err),
+        }
+    }
+
+    fn get_claims(
+        &self,
+        headers: &HeaderMap,
+        option_state: &Option<Data<AppState>>,
+    ) -> Result<Option<Claims>, JWTError> {
+        if let Some((name, token)) = self.get_header_parts(headers) {
+            let conf_from_file = Config::from_file();
+
+            let config = match option_state {
+                Some(app_state) => &app_state.config,
+                None => &conf_from_file,
+            };
+            match self.parse_claims(&config, name, token) {
+                Ok(claims) => Ok(Some(claims)),
+                Err(err) => Err(err),
+            }
+        } else {
+            Ok(None)
+        }
+    }
+}
+
 impl<S, B> Service for AuthenticationMiddleware<S>
 where
     S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
@@ -76,38 +125,26 @@ where
 
     fn call(&mut self, req: ServiceRequest) -> Self::Future {
         let headers = req.headers();
+        let app_state = &req.app_data::<AppState>();
 
-        if let Some(auth_header) = headers.get("Authorization".to_string()) {
-            let parts: Vec<&str> = auth_header.to_str().unwrap_or("").split(" ").collect();
-            dbg!(&parts);
+        let clms = self.get_claims(headers, app_state);
+        let mut result_error: Option<JWTError> = None;
 
-            if parts.len() == 2 {
-                let name = parts[0];
-                let token = parts[1];
-                if let Some(app_state) = &req.app_data::<AppState>() {
-                    let opt_claims = get_claims(&app_state.config, name, token);
-                    dbg!(&opt_claims);
-                    if let Some(claims) = opt_claims {
-                        req.extensions_mut().insert::<Claims>(claims)
-                    }
-                }
-            }
+        match clms {
+            Ok(Some(claims)) => req.extensions_mut().insert::<Claims>(claims),
+            Ok(None) => {}
+            Err(err) => result_error = Some(err),
         };
 
         let fut = self.service.call(req);
 
         Box::pin(async move {
-            let res = fut.await?;
-
-            println!("Hi from response");
-            Ok(res)
+            if let Some(err) = result_error {
+                Err(Error::from(ErrorResponse::from(err)))
+            } else {
+                let res = fut.await?;
+                Ok(res)
+            }
         })
-    }
-}
-
-fn get_claims(config: &Config, name: &str, raw_token: &str) -> Option<Claims> {
-    match decode_token(config, raw_token) {
-        Ok(token_data) => Some(token_data.claims),
-        _ => None,
     }
 }

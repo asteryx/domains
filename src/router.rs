@@ -1,4 +1,3 @@
-use crate::errors::ErrorResponse;
 use crate::index;
 use crate::user_api::auth::login;
 use actix::Addr;

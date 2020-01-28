@@ -35,8 +35,8 @@ pub async fn login(
     //    claims: Claims,
 ) -> Result<HttpResponse, ErrorResponse> {
     let exts = req.extensions();
-    let usr = exts.get::<Claims>();
-    dbg!(&usr);
+    let clms = exts.get::<Claims>();
+    dbg!(&clms);
 
     let res = data
         .db
@@ -49,7 +49,6 @@ pub async fn login(
         Ok(user) => {
             if user.check_password(&login.password) {
                 let token = encode_token(&data.config, &user)?;
-                dbg!(&token);
 
                 //                let claims_data = decode_token(&data.config, &token)?;
                 //                dbg!(&claims_data);

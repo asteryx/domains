@@ -64,6 +64,8 @@ pub fn encode_token(config: &Config, user: &User) -> Result<String, JWTError> {
         &EncodingKey::from_secret(secret.as_ref()),
     )?;
 
+    debug!("{}", &token);
+
     Ok(token)
 }
 
