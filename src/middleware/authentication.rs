@@ -69,6 +69,7 @@ impl<S> AuthenticationMiddleware<S> {
             if parts.len() == 2 {
                 return Some((parts[0], parts[1]));
             }
+            //TODO Return error if not recognize headers
         };
         None
     }
