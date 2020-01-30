@@ -34,9 +34,9 @@ pub async fn login(
     //    TODO add this to from request
     //    claims: Claims,
 ) -> Result<HttpResponse, ErrorResponse> {
-    let exts = req.extensions();
-    let clms = exts.get::<Claims>();
-    dbg!(&clms);
+    //    let exts = req.extensions();
+    //    let clms = exts.get::<Claims>();
+    //    dbg!(&clms);
 
     let res = data
         .db
@@ -48,15 +48,10 @@ pub async fn login(
     match res {
         Ok(user) => {
             if user.check_password(&login.password) {
-                let token = encode_token(&data.config, &user)?;
-
-                //                let claims_data = decode_token(&data.config, &token)?;
-                //                dbg!(&claims_data);
-
                 Ok(HttpResponse::Ok()
                     .content_type("application/json")
                     .json(json!(LoginResult {
-                        token: token,
+                        token: encode_token(&data.config, &user)?,
                         email: user.email,
                         name: user.name
                     })))
@@ -67,13 +62,10 @@ pub async fn login(
                 })
             }
         }
-        _ => {
-            //            Add check password
-            Err(ErrorResponse {
-                msg: "Username/password didn't match".to_string(),
-                status: 400,
-            })
-        }
+        _ => Err(ErrorResponse {
+            msg: "Username/password didn't match".to_string(),
+            status: 400,
+        }),
     }
 }
 

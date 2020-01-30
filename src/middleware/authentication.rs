@@ -63,15 +63,21 @@ pub struct AuthenticationMiddleware<S> {
 }
 
 impl<S> AuthenticationMiddleware<S> {
-    fn get_header_parts<'a>(&self, headers: &'a HeaderMap) -> Option<(&'a str, &'a str)> {
+    fn get_header_parts<'a>(
+        &self,
+        headers: &'a HeaderMap,
+    ) -> Result<Option<(&'a str, &'a str)>, JWTError> {
         if let Some(auth_header) = headers.get("Authorization".to_string()) {
             let parts: Vec<&str> = auth_header.to_str().unwrap_or("").split(" ").collect();
             if parts.len() == 2 {
-                return Some((parts[0], parts[1]));
+                Ok(Some((parts[0], parts[1])))
+            } else {
+                error!("Unable parsing header 'Authorization': {:#?}", &parts);
+                Err(JWTError::TokenParsingError)
             }
-            //TODO Return error if not recognize headers
-        };
-        None
+        } else {
+            Ok(None)
+        }
     }
 
     fn parse_claims(
@@ -92,7 +98,7 @@ impl<S> AuthenticationMiddleware<S> {
         headers: &HeaderMap,
         option_state: &Option<Data<AppState>>,
     ) -> Result<Option<Claims>, JWTError> {
-        if let Some((name, token)) = self.get_header_parts(headers) {
+        if let Some((name, token)) = self.get_header_parts(headers)? {
             let conf_from_file = Config::from_file();
 
             let config = match option_state {

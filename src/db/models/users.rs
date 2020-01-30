@@ -33,7 +33,7 @@ impl User {
         match hasher.verify(raw_password, &self.password) {
             Ok(true) => true,
             Err(e) => {
-                log::error!("Error: `{}` checking password for user_id {}", e, self.id);
+                error!("Error: `{}` checking password for user_id {}", e, self.id);
                 false
             }
             _ => false,
@@ -55,7 +55,7 @@ impl Handler<FindUser> for DbExecutor {
     fn handle(&mut self, find_user: FindUser, ctx: &mut Self::Context) -> Self::Result {
         use crate::db::schema::users::dsl::*;
 
-        log::info!("Get user from email {}", &find_user.email);
+        debug!("Get user from email {}", &find_user.email);
         match users
             .filter(email.eq(&find_user.email))
             .limit(2)

@@ -21,7 +21,6 @@ use log::Level;
 use crate::db::models::domains::Domain;
 use crate::db::DbExecutor;
 use crate::services::ping::Ping;
-use crate::state::AppState;
 use actix::prelude::*;
 use actix_files as fs;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
@@ -37,19 +36,16 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 use tera::ast::ExprVal::StringConcat;
 
-mod config;
 mod db;
-mod errors;
-mod hashers;
 mod index;
 mod jobs;
-mod jwt;
 mod middleware;
-mod router;
 mod services;
 mod share;
-mod state;
 mod user_api;
+mod utils;
+
+pub use utils::{config, errors, guards, hashers, jwt, router, state, state::AppState};
 
 #[actix_rt::main]
 async fn main() -> io::Result<()> {

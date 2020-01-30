@@ -14,6 +14,18 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub enum JWTError {
     TokenInvalid,
     TokenExpired,
+    TokenParsingError,
+}
+
+impl Display for JWTError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let error_string = match self {
+            JWTError::TokenInvalid => "Token is invalid",
+            JWTError::TokenExpired => "Token is expired",
+            _ => "Error parsing token",
+        };
+        write!(f, "{}", error_string)
+    }
 }
 
 impl From<jsonwebtoken::errors::Error> for JWTError {
@@ -31,6 +43,12 @@ pub struct Claims {
     email: String,
     expire: NaiveDateTime,
     exp: usize,
+}
+
+impl Claims {
+    pub fn email(&self) -> &str {
+        &self.email
+    }
 }
 
 impl Display for Claims {
@@ -64,8 +82,6 @@ pub fn encode_token(config: &Config, user: &User) -> Result<String, JWTError> {
         &EncodingKey::from_secret(secret.as_ref()),
     )?;
 
-    debug!("{}", &token);
-
     Ok(token)
 }
 
@@ -77,7 +93,6 @@ pub fn decode_token(config: &Config, token: &str) -> Result<TokenData<Claims>, J
         &DecodingKey::from_secret(secret.as_ref()),
         &Validation::new(Algorithm::HS512),
     )?;
-    debug!("{:?}", &token_data);
 
     Ok(token_data)
 }
