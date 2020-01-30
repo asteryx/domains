@@ -8,7 +8,6 @@ use jsonwebtoken::{
 use serde::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
 use std::fmt::{Display, Formatter, Result as ResultFormat};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum JWTError {

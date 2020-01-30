@@ -14,10 +14,5 @@ pub fn login_required(request_head: &RequestHead) -> bool {
 }
 
 pub fn unlogged_required(request_head: &RequestHead) -> bool {
-    let extensions = request_head.extensions();
-    let claims = extensions.get::<Claims>();
-    match claims {
-        Some(claim) => false,
-        _ => true,
-    }
+    !login_required(request_head)
 }

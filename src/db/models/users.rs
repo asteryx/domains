@@ -52,7 +52,7 @@ impl Message for FindUser {
 impl Handler<FindUser> for DbExecutor {
     type Result = io::Result<User>;
 
-    fn handle(&mut self, find_user: FindUser, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, find_user: FindUser, _ctx: &mut Self::Context) -> Self::Result {
         use crate::db::schema::users::dsl::*;
 
         debug!("Get user from email {}", &find_user.email);
@@ -90,7 +90,7 @@ impl Message for UpdateUser {
 impl Handler<UpdateUser> for DbExecutor {
     type Result = io::Result<bool>;
 
-    fn handle(&mut self, msg: UpdateUser, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _msg: UpdateUser, _ctx: &mut Self::Context) -> Self::Result {
         Ok(true)
     }
 }

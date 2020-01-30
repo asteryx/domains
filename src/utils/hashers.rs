@@ -98,10 +98,10 @@ impl PBKDF2PasswordHasher {
         };
 
         // Parse format - currenlty only version 0 is supported
-        let version = self.version.to_string();
+        let _version = self.version.to_string();
         match iter.next() {
             Some(fstr) => match fstr {
-                version => {}
+                "0" => (),
                 _ => return Err(HasherError::InvalidFormat),
             },
             None => return Err(HasherError::InvalidFormat),

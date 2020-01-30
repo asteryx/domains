@@ -1,18 +1,12 @@
 use crate::db;
 use crate::errors::ErrorResponse;
-use crate::jwt::{decode_token, encode_token, Claims};
+use crate::jwt::encode_token;
 use crate::AppState;
-use actix::prelude::*;
-use actix_web::{web, Error, HttpRequest, HttpResponse, ResponseError};
-use diesel::prelude::*;
-use futures::stream::Stream;
-use futures::{future::err, future::ok, Future};
-use json::JsonValue;
+
+use actix_web::{web, HttpRequest, HttpResponse};
+
 use serde_derive::{Deserialize, Serialize};
-use serde_json::{json, to_string_pretty};
-use std::sync::Mutex;
-use std::thread::sleep;
-use std::time::Duration;
+use serde_json::json;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Login {
@@ -29,7 +23,7 @@ struct LoginResult {
 
 pub async fn login(
     login: web::Json<Login>,
-    req: HttpRequest,
+    _req: HttpRequest,
     data: web::Data<AppState>,
     //    TODO add this to from request
     //    claims: Claims,

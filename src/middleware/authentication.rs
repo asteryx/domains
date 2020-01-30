@@ -19,24 +19,24 @@ use std::sync::Mutex;
 //    next service in chain as parameter.
 // 2. Middleware's call method gets called with normal request.
 pub struct AuthenticationService {
-    inner: Rc<String>,
+    //    inner: Rc<String>,
 }
 
 impl Default for AuthenticationService {
     fn default() -> Self {
         Self {
-            inner: Rc::new("JWT".to_string()),
+//            inner: Rc::new("JWT".to_string()),
         }
     }
 }
 
-impl AuthenticationService {
-    fn new(auth_name: &str) -> Self {
-        Self {
-            inner: Rc::new(auth_name.to_string()),
-        }
-    }
-}
+//impl AuthenticationService {
+//    fn new(auth_name: &str) -> Self {
+//        Self {
+//            inner: Rc::new(auth_name.to_string()),
+//        }
+//    }
+//}
 // Middleware factory is `Transform` trait from actix-service crate
 // `S` - type of the next service
 // `B` - type of response's body
@@ -83,7 +83,7 @@ impl<S> AuthenticationMiddleware<S> {
     fn parse_claims(
         &self,
         config: &Config,
-        name: &str,
+        _name: &str,
         raw_token: &str,
     ) -> Result<Claims, JWTError> {
         let token_data = decode_token(config, raw_token);

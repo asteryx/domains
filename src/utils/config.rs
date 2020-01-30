@@ -85,8 +85,8 @@ impl Config {
                     File::create(&path).expect(&"Cannot create config file 'config.toml'");
                 let config = Config::default();
                 let tml = toml::to_string(&config).unwrap();
-                f.write(tml.as_bytes());
-                f.sync_all();
+                f.write(tml.as_bytes()).ok();
+                f.sync_all().ok();
                 tml
             }
         }

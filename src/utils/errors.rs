@@ -4,7 +4,7 @@ use actix_web::error::JsonPayloadError;
 use actix_web::http::StatusCode;
 use actix_web::{HttpRequest, HttpResponse, ResponseError};
 use regex::Regex;
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Serialize;
 use serde_json::{json, to_string_pretty};
 use std::fmt::{Display, Formatter, Result};
 
@@ -49,7 +49,7 @@ impl From<jwt::JWTError> for ErrorResponse {
     }
 }
 
-pub fn json_error_handler(err: JsonPayloadError, req: &HttpRequest) -> actix_web::Error {
+pub fn json_error_handler(err: JsonPayloadError, _req: &HttpRequest) -> actix_web::Error {
     let error_message: String = match err {
         JsonPayloadError::Payload(payload_error) => format!("{}", payload_error),
         JsonPayloadError::Deserialize(error) => {

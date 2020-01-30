@@ -139,7 +139,7 @@ impl Actor for Ping {
 impl Handler<PingRequest> for Ping {
     type Result = Result<bool, IoError>;
 
-    fn handle(&mut self, msg: PingRequest, ctx: &mut SyncContext<Self>) -> Self::Result {
+    fn handle(&mut self, msg: PingRequest, _ctx: &mut SyncContext<Self>) -> Self::Result {
         let media_root = msg.state.config.media_root();
 
         let folders = format!("{}{}", &media_root, &msg.domain.name);
@@ -194,13 +194,10 @@ impl Handler<PingRequest> for Ping {
                 .map_err(|err| IoError::new(IoErrorKind::Interrupted, err))
                 .and_then(|result| match result {
                     Ok(filenames_for_remove) => {
-                        filenames_for_remove
-                            .iter()
-                            .map(|name| {
-                                fs::remove_file(format!("{}{}", &media_root, name)).unwrap();
-                                ()
-                            })
-                            .collect::<Vec<()>>();
+                        filenames_for_remove.iter().for_each(|name| {
+                            fs::remove_file(format!("{}{}", &media_root, name)).unwrap();
+                            ()
+                        });
                         Ok(())
                     }
                     Err(err) => {
@@ -209,7 +206,8 @@ impl Handler<PingRequest> for Ping {
                         fs::remove_file(&full_path).unwrap();
                         Ok(())
                     }
-                });
+                })
+                .ok();
             }
         };
 

@@ -82,7 +82,7 @@ impl Message for FindDomain {
 impl Handler<FindDomain> for DbExecutor {
     type Result = io::Result<Vec<Domain>>;
 
-    fn handle(&mut self, domain_msg: FindDomain, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, domain_msg: FindDomain, _ctx: &mut Self::Context) -> Self::Result {
         use crate::db::schema::domain::dsl::*;
 
         debug!("Get domain from {:?}", &domain_msg);
@@ -97,7 +97,7 @@ impl Handler<FindDomain> for DbExecutor {
         };
 
         match query_result {
-            Ok(mut domains_db) => Ok(domains_db),
+            Ok(domains_db) => Ok(domains_db),
             Err(_) => Err(io::Error::new(io::ErrorKind::Other, "Database error")),
         }
     }
@@ -138,7 +138,7 @@ impl Handler<InsertDomainStatusRequest> for DbExecutor {
     fn handle(
         &mut self,
         insert_msg: InsertDomainStatusRequest,
-        ctx: &mut Self::Context,
+        _ctx: &mut Self::Context,
     ) -> Self::Result {
         use crate::db::schema::domain_status::dsl::*;
 
@@ -147,7 +147,7 @@ impl Handler<InsertDomainStatusRequest> for DbExecutor {
             .execute(&self.pool.get().unwrap())
         {
             Ok(_) => true,
-            Err(err) => false,
+            Err(_) => false,
         };
 
         if inserted && self.config.domain_statuses_rotation() {
@@ -167,7 +167,9 @@ impl Handler<InsertDomainStatusRequest> for DbExecutor {
                 .unwrap();
 
             let ids = subquery.iter().map(|el| el.0).collect::<Vec<i32>>();
-            diesel::delete(domain_status.filter(id.eq_any(ids))).execute(&self.pool.get().unwrap());
+            diesel::delete(domain_status.filter(id.eq_any(ids)))
+                .execute(&self.pool.get().unwrap())
+                .ok();
 
             let filenames = subquery
                 .iter()

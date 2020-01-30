@@ -1,4 +1,4 @@
-#![allow(warnings, unused)]
+//#![allow(warnings, unused)]
 #[macro_use]
 extern crate json;
 #[macro_use]
@@ -24,7 +24,7 @@ use crate::services::ping::Ping;
 use actix::prelude::*;
 use actix_files as fs;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
-use actix_web::{client, middleware as actix_middleware, web, App, HttpServer};
+use actix_web::{client, middleware as actix_middleware, web, App, HttpResponse, HttpServer};
 use diesel::r2d2::{ConnectionManager, Pool};
 use env_logger::{builder, Builder};
 use listenfd::ListenFd;
@@ -74,7 +74,7 @@ async fn main() -> io::Result<()> {
     builder.init();
 
     if let Ok(res) = std::env::var(&env_name) {
-        println!("Log level set is {}", res);
+        info!("Log level set is {}", res);
     }
 
     debug!("CPU's num {}", num_cpus::get());
