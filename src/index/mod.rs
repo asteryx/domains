@@ -1,5 +1,4 @@
 use actix_web::{Error, HttpRequest, HttpResponse};
-use futures::{future::ok, Future};
 use tera::{Context, Tera};
 
 const ERROR_500: &str = "

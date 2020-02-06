@@ -2,16 +2,10 @@ pub mod models;
 pub mod schema;
 
 use crate::config::Config;
-use crate::AppState;
-use actix::{Actor, Addr, SyncArbiter, SyncContext};
-use actix_web::web;
+use actix::{Actor, SyncContext};
 use diesel::prelude::PgConnection;
 use diesel::r2d2;
-use diesel::r2d2::{ConnectionManager, Error, Pool};
-use dotenv;
-use num_cpus;
-use rand::prelude::ThreadRng;
-use rand::thread_rng;
+use diesel::r2d2::{ConnectionManager, Pool};
 
 pub enum DbError {
     GetConnectionError,
@@ -28,10 +22,16 @@ impl Actor for DbExecutor {
     type Context = SyncContext<Self>;
 }
 
-impl DbExecutor {
-    pub fn new() -> DbExecutor {
+impl Default for DbExecutor {
+    fn default() -> Self {
         let config = Config::from_file();
         let pool = init_pool(&config);
+        DbExecutor::new(config, pool)
+    }
+}
+
+impl DbExecutor {
+    fn new(config: Config, pool: Pool<ConnectionManager<PgConnection>>) -> DbExecutor {
         DbExecutor { config, pool }
     }
     pub fn get_connection(
@@ -45,12 +45,8 @@ impl DbExecutor {
 }
 
 pub fn init_pool(config: &Config) -> Pool<ConnectionManager<PgConnection>> {
-    let db_url = match std::env::var("DATABASE_URL") {
-        Ok(res) => res,
-        Err(_) => config.database_url().clone(),
-    };
-
-    let manager: ConnectionManager<PgConnection> = ConnectionManager::<PgConnection>::new(db_url);
+    let manager: ConnectionManager<PgConnection> =
+        ConnectionManager::<PgConnection>::new(config.database_url());
     Pool::builder()
         .max_size(10)
         .build(manager)

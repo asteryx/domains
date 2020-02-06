@@ -1,28 +1,16 @@
-use crate::{db, AppState};
-extern crate chrono;
+use crate::AppState;
 extern crate signal_hook;
 use crate::db::models::domains::{Domain, InsertDomainStatusRequest};
-use crate::db::models::users::User;
-use crate::db::DbExecutor;
 use actix::prelude::*;
-use actix::utils::IntervalFunc;
-use actix_web::{web, web::Data};
-use chrono::{Duration as ChronoDuration, Utc};
-use env_logger::Logger;
+use actix_web::web;
+use chrono::Utc;
 use futures::executor::block_on;
 use reqwest::blocking::Client;
-use signal_hook::flag as signal_flag;
-use std::env::temp_dir;
 use std::fs;
-use std::fs::File;
-use std::io::{self, Write};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
-use std::ops::Add;
 use std::process::Command;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use std::thread::sleep;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 //impl Ping {
 //    pub fn new(state: web::Data<AppState>) -> Ping {

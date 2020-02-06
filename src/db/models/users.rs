@@ -5,8 +5,6 @@ use actix::{Handler, Message};
 use diesel::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use std::io;
-use std::io::Error;
-use std::ptr::hash;
 
 #[derive(Identifiable, Queryable, Debug, Serialize, Deserialize)]
 pub struct User {

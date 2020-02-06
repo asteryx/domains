@@ -3,8 +3,24 @@ use std::fs::File;
 use std::io::{Read, Write};
 use toml;
 
-#[derive(Serialize, Deserialize, Debug)]
+const ENV_PREFIX: &str = "DOMAINS";
+
+fn get_env_name(local_env: &str) -> String {
+    format!("{}_{}", ENV_PREFIX, local_env).to_ascii_uppercase()
+}
+
+pub fn get_env(name: &str, default: &str) -> String {
+    let env_var = std::env::var(&get_env_name(name));
+    match env_var {
+        Ok(var) => var,
+        _ => default.to_string(),
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
+    server_addr: String,
+    server_port: String,
     database_url: String,
     log_level: String,
     ping_interval: u64, //in seconds
@@ -17,11 +33,20 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn database_url(&self) -> &String {
-        &self.database_url
+    pub fn server_addr(&self) -> String {
+        get_env("server_addr", &self.server_addr)
     }
-    pub fn log_level(&self) -> &String {
-        &self.log_level
+    pub fn server_port(&self) -> String {
+        get_env("server_port", &self.server_port)
+    }
+    pub fn database_url(&self) -> String {
+        get_env("database_url", &self.database_url)
+    }
+    pub fn log_level(&self) -> String {
+        get_env("log_level", &self.log_level)
+    }
+    pub fn log_level_env_name(&self) -> String {
+        get_env_name("log_level")
     }
     pub fn ping_interval(&self) -> u64 {
         self.ping_interval
@@ -49,6 +74,8 @@ impl Config {
 impl Default for Config {
     fn default() -> Config {
         Config {
+            server_addr: "127.0.0.1".to_string(),
+            server_port: "8000".to_string(),
             database_url: "postgres://domains:defaultpassword@localhost:5432/domains".to_string(),
             log_level: "ERROR".to_string(),
             ping_interval: 60,

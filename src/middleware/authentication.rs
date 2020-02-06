@@ -11,32 +11,19 @@ use actix_web::web::Data;
 use actix_web::{dev::ServiceRequest, dev::ServiceResponse, Error, HttpMessage};
 use futures::future::{ok, Ready};
 use futures::Future;
-use std::rc::Rc;
-use std::sync::Mutex;
 
 // There are two steps in middleware processing.
 // 1. Middleware initialization, middleware factory gets called with
 //    next service in chain as parameter.
 // 2. Middleware's call method gets called with normal request.
-pub struct AuthenticationService {
-    //    inner: Rc<String>,
-}
+pub struct AuthenticationService {}
 
 impl Default for AuthenticationService {
     fn default() -> Self {
-        Self {
-//            inner: Rc::new("JWT".to_string()),
-        }
+        Self {}
     }
 }
 
-//impl AuthenticationService {
-//    fn new(auth_name: &str) -> Self {
-//        Self {
-//            inner: Rc::new(auth_name.to_string()),
-//        }
-//    }
-//}
 // Middleware factory is `Transform` trait from actix-service crate
 // `S` - type of the next service
 // `B` - type of response's body

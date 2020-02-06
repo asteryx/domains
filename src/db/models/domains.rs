@@ -2,12 +2,10 @@ use crate::db::models::users::User;
 use crate::db::schema::domain;
 use crate::db::schema::domain_status;
 use crate::db::DbExecutor;
-use crate::hashers::PBKDF2PasswordHasher;
 use actix::{Handler, Message};
-use chrono::{DateTime, Duration, NaiveDateTime, Utc};
+use chrono::{Duration, NaiveDateTime, Utc};
 use diesel::backend::Backend;
 use diesel::deserialize as diesel_deserialize;
-use diesel::pg::Pg;
 use diesel::prelude::*;
 use diesel::serialize as diesel_serialize;
 use diesel::sql_types::Integer;
@@ -15,7 +13,6 @@ use serde_derive::{Deserialize, Serialize};
 use std::io;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
-use std::ptr::hash;
 
 #[repr(i32)]
 #[derive(Debug, PartialEq, AsExpression, Clone, Serialize, Deserialize, FromSqlRow)]
