@@ -9,7 +9,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Login {
+pub struct InputLoginData {
     email: String,
     password: String,
 }
@@ -22,10 +22,10 @@ struct LoginResult {
 }
 
 pub async fn login(
-    login: web::Json<Login>,
+    login: web::Json<InputLoginData>,
     _req: HttpRequest,
     data: web::Data<AppState>,
-    //    TODO add this to from request
+    //    TODO add to this from request trait
     //    claims: Claims,
 ) -> Result<HttpResponse, ErrorResponse> {
     //    let exts = req.extensions();

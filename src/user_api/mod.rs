@@ -1,1 +1,4 @@
-pub mod auth;
+mod auth;
+mod domains;
+
+pub use auth::login;
