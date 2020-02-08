@@ -49,6 +49,15 @@ impl From<jwt::JWTError> for ErrorResponse {
     }
 }
 
+impl From<std::io::Error> for ErrorResponse {
+    fn from(outer: std::io::Error) -> Self {
+        ErrorResponse {
+            msg: format!("{}", outer),
+            status: 400,
+        }
+    }
+}
+
 pub fn json_error_handler(err: JsonPayloadError, _req: &HttpRequest) -> actix_web::Error {
     let error_message: String = match err {
         JsonPayloadError::Payload(payload_error) => format!("{}", payload_error),

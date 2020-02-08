@@ -5,11 +5,12 @@ use crate::db::DbExecutor;
 use actix::{Handler, Message};
 use chrono::{Duration, NaiveDateTime, Utc};
 use diesel::backend::Backend;
-use diesel::deserialize as diesel_deserialize;
 use diesel::prelude::*;
 use diesel::serialize as diesel_serialize;
 use diesel::sql_types::Integer;
+use diesel::{deserialize as diesel_deserialize, sql_query};
 use serde_derive::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 use std::io;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
@@ -21,6 +22,17 @@ pub enum DomainState {
     Enabled,
     Disabled,
     Removed,
+}
+
+impl Display for DomainState {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        let res = match self {
+            &DomainState::Enabled => "1".to_string(),
+            &DomainState::Disabled => "2".to_string(),
+            _ => "0".to_string(),
+        };
+        write!(f, "{}", res)
+    }
 }
 
 impl<DB> diesel_serialize::ToSql<Integer, DB> for DomainState
@@ -55,47 +67,61 @@ where
     }
 }
 
-#[derive(Associations, Identifiable, Queryable, Debug, Serialize, Deserialize, Clone)]
+#[derive(
+    Associations, Identifiable, Queryable, Debug, Serialize, Deserialize, Clone, QueryableByName,
+)]
 #[belongs_to(User, foreign_key = "author")]
 #[table_name = "domain"]
 pub struct Domain {
     pub id: i32,
     pub name: String,
     pub url: String,
-    pub active: DomainState,
+    pub state: DomainState,
     pub author: i32,
 }
 
 #[derive(Debug)]
-pub struct FindDomain {
-    pub name: Option<String>,
-    pub status: DomainState,
+pub struct DomainList {
+    pub limit: usize,
+    pub offset: usize,
+    pub status: Option<DomainState>,
+    pub search_string: Option<String>,
 }
 
-impl Message for FindDomain {
+impl Message for DomainList {
     type Result = io::Result<Vec<Domain>>;
 }
 
-impl Handler<FindDomain> for DbExecutor {
+impl Handler<DomainList> for DbExecutor {
     type Result = io::Result<Vec<Domain>>;
 
-    fn handle(&mut self, domain_msg: FindDomain, _ctx: &mut Self::Context) -> Self::Result {
-        use crate::db::schema::domain::dsl::*;
+    fn handle(&mut self, domain_msg: DomainList, _ctx: &mut Self::Context) -> Self::Result {
+        //        use crate::db::schema::domain::dsl::*;
 
         debug!("Get domain from {:?}", &domain_msg);
 
-        let query_result = match &domain_msg.name {
-            Some(domain_name) => domain
-                .filter(state.eq(&domain_msg.status).and(name.eq(domain_name)))
-                .load::<Domain>(&self.pool.get().unwrap()),
-            None => domain
-                .filter(state.eq(&domain_msg.status))
-                .load::<Domain>(&self.pool.get().unwrap()),
-        };
+        let mut query = "SELECT * FROM domain ".to_string();
+        if let Some(domain_state) = &domain_msg.status {
+            query.push_str(format!("WHERE state = {} ", domain_state).as_str());
+        }
+        if domain_msg.limit > 0usize {
+            query.push_str(format!("LIMIT {} ", domain_msg.limit).as_str());
+        }
+        if domain_msg.offset > 0usize {
+            query.push_str(format!("LIMIT {} ", domain_msg.offset).as_str());
+        }
+        query.push_str("ORDER BY id");
+        dbg!(&query);
+
+        let query_result = sql_query(query).load::<Domain>(&self.pool.get().unwrap());
 
         match query_result {
             Ok(domains_db) => Ok(domains_db),
-            Err(_) => Err(io::Error::new(io::ErrorKind::Other, "Database error")),
+            Err(err) => {
+                error!("Error id db search {}", err);
+                let vvv: Vec<Domain> = Vec::new();
+                Ok(vvv)
+            }
         }
     }
 }

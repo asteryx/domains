@@ -5,8 +5,8 @@ use crate::AppState;
 
 use actix_web::{web, HttpRequest, HttpResponse};
 
+use crate::utils::json_response;
 use serde_derive::{Deserialize, Serialize};
-use serde_json::json;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InputLoginData {
@@ -39,28 +39,19 @@ pub async fn login(
         })
         .await?;
 
-    match res {
-        Ok(user) => {
-            if user.check_password(&login.password) {
-                Ok(HttpResponse::Ok()
-                    .content_type("application/json")
-                    .json(json!(LoginResult {
-                        token: encode_token(&data.config, &user)?,
-                        email: user.email,
-                        name: user.name
-                    })))
-            } else {
-                Err(ErrorResponse {
-                    msg: "Username/password didn't match".to_string(),
-                    status: 400,
-                })
-            }
+    if let Ok(user) = res {
+        if user.check_password(&login.password) {
+            return Ok(json_response(LoginResult {
+                token: encode_token(&data.config, &user)?,
+                email: user.email,
+                name: user.name,
+            }));
         }
-        _ => Err(ErrorResponse {
-            msg: "Username/password didn't match".to_string(),
-            status: 400,
-        }),
     }
+    Err(ErrorResponse {
+        msg: "Username/password didn't match".to_string(),
+        status: 400,
+    })
 }
 
 // pub fn register (pl: web::Payload) -> impl Future<Item = HttpResponse, Error = Error> {
