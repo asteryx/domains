@@ -25,13 +25,7 @@ pub async fn login(
     login: web::Json<InputLoginData>,
     _req: HttpRequest,
     data: web::Data<AppState>,
-    //    TODO add to this from request trait
-    //    claims: Claims,
 ) -> Result<HttpResponse, ErrorResponse> {
-    //    let exts = req.extensions();
-    //    let clms = exts.get::<Claims>();
-    //    dbg!(&clms);
-
     let res = data
         .db
         .send(db::models::users::FindUser {

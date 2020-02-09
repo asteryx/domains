@@ -1,6 +1,10 @@
 use crate::config::Config;
 use crate::db::models::users::User;
+use crate::errors::ErrorResponse;
+use actix_web::dev::Payload;
+use actix_web::HttpRequest;
 use chrono::{Duration, NaiveDateTime, Utc};
+use futures::future::{err, ok, Ready};
 use jsonwebtoken::errors::{Error as JWT_Error, ErrorKind as JWT_ErrorKind};
 use jsonwebtoken::{
     decode, encode, Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation,
@@ -36,7 +40,7 @@ impl From<jsonwebtoken::errors::Error> for JWTError {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     user_id: i32,
     email: String,
@@ -48,12 +52,46 @@ impl Claims {
     pub fn email(&self) -> &str {
         &self.email
     }
+    pub fn user_id(&self) -> i32 {
+        self.user_id
+    }
 }
 
 impl Display for Claims {
     fn fmt(&self, f: &mut Formatter) -> ResultFormat {
         write!(f, "{}", to_string_pretty(self).unwrap())
     }
+}
+
+impl actix_web::FromRequest for Claims {
+    // The associated error which can be returned.
+    type Error = ErrorResponse;
+
+    // Future that resolves to a Self
+    type Future = Ready<Result<Claims, Self::Error>>;
+
+    // Configuration for this extractor
+    type Config = ();
+
+    // Convert request to a Self
+    fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
+        let extensions = req.extensions();
+        let qp = extensions.get::<Claims>();
+        match qp {
+            Some(q_param) => ok(q_param.clone()),
+            _ => err(ErrorResponse {
+                msg: "Error in authorization".to_string(),
+                status: 403,
+            }),
+        }
+    }
+
+    // Convert request to a Self
+    //
+    // This method uses `Payload::None` as payload stream.
+    //    fn extract(req: &HttpRequest) -> Self::Future {
+    //        Self::from_request(req, &mut Payload::None)
+    //    }
 }
 
 pub fn encode_token(config: &Config, user: &User) -> Result<String, JWTError> {

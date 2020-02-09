@@ -9,26 +9,27 @@ use diesel::prelude::*;
 use diesel::serialize as diesel_serialize;
 use diesel::sql_types::Integer;
 use diesel::{deserialize as diesel_deserialize, sql_query};
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::{Deserialize as DeriveDeserialize, Serialize as DeriveSerialize};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
 
 #[repr(i32)]
-#[derive(Debug, PartialEq, AsExpression, Clone, Serialize, Deserialize, FromSqlRow)]
+#[derive(Debug, PartialEq, AsExpression, Clone, Serialize_repr, Deserialize_repr, FromSqlRow)]
 #[sql_type = "Integer"]
 pub enum DomainState {
-    Enabled,
-    Disabled,
-    Removed,
+    Enabled = 1,
+    Disabled = 2,
+    Removed = 0,
 }
 
 impl Display for DomainState {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         let res = match self {
-            &DomainState::Enabled => "1".to_string(),
-            &DomainState::Disabled => "2".to_string(),
+            DomainState::Enabled => "1".to_string(),
+            DomainState::Disabled => "2".to_string(),
             _ => "0".to_string(),
         };
         write!(f, "{}", res)
@@ -55,8 +56,8 @@ where
         out: &mut diesel_serialize::Output<W, DB>,
     ) -> diesel_serialize::Result {
         match self {
-            &DomainState::Enabled => 1,
-            &DomainState::Disabled => 2,
+            DomainState::Enabled => 1,
+            DomainState::Disabled => 2,
             _ => 0,
         }
         .to_sql(out)
@@ -78,7 +79,14 @@ where
 }
 
 #[derive(
-    Associations, Identifiable, Queryable, Debug, Serialize, Deserialize, Clone, QueryableByName,
+    Associations,
+    Identifiable,
+    Queryable,
+    Debug,
+    DeriveSerialize,
+    DeriveDeserialize,
+    Clone,
+    QueryableByName,
 )]
 #[belongs_to(User, foreign_key = "author")]
 #[table_name = "domain"]
@@ -90,7 +98,8 @@ pub struct Domain {
     pub author: i32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Insertable)]
+#[table_name = "domain"]
 pub struct DomainInsert {
     pub name: String,
     pub url: String,
@@ -102,13 +111,38 @@ impl Message for DomainInsert {
     type Result = io::Result<Domain>;
 }
 
-//impl Handler<DomainInsert> for DbExecutor {
-//    type Result = io::Result<Domain>;
-//
-//    fn handle(&mut self, domain_msg: DomainInsert, _ctx: &mut Self::Context) -> Self::Result {
-//        //        INSERT INTO persons (lastname,firstname) VALUES ('Smith', 'John') RETURNING id;
-//    }
-//}
+impl Handler<DomainInsert> for DbExecutor {
+    type Result = io::Result<Domain>;
+
+    fn handle(&mut self, domain_msg: DomainInsert, _ctx: &mut Self::Context) -> Self::Result {
+        use crate::db::schema::domain::dsl::*;
+
+        let inserted = diesel::insert_into(domain)
+            .values(&domain_msg)
+            .returning(id)
+            .get_results::<i32>(&self.pool.get().unwrap());
+
+        match inserted {
+            Ok(value) => {
+                if value.len() > 0 {
+                    Ok(Domain {
+                        id: *value.get(0).unwrap_or(&0),
+                        name: domain_msg.name,
+                        url: domain_msg.url,
+                        state: domain_msg.state,
+                        author: domain_msg.author,
+                    })
+                } else {
+                    Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        "Something went wrong. Please reload domain list",
+                    ))
+                }
+            }
+            Err(err) => Err(io::Error::new(io::ErrorKind::Other, err)),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct DomainList {
@@ -161,15 +195,16 @@ impl Handler<DomainList> for DbExecutor {
         match query_result {
             Ok(domains_db) => Ok(domains_db),
             Err(err) => {
-                error!("Error in db search {}", err);
-                let empty: Vec<Domain> = Vec::new();
-                Ok(empty)
+                error!("Error in db search {}", &err);
+                Err(io::Error::new(io::ErrorKind::Other, err))
             }
         }
     }
 }
 
-#[derive(Associations, Identifiable, Queryable, Debug, Serialize, Deserialize, Clone)]
+#[derive(
+    Associations, Identifiable, Queryable, Debug, DeriveSerialize, DeriveDeserialize, Clone,
+)]
 #[table_name = "domain_status"]
 #[belongs_to(Domain, foreign_key = "domain_id")]
 pub struct DomainStatus {
@@ -183,7 +218,7 @@ pub struct DomainStatus {
     pub domain: i32,
 }
 
-#[derive(Insertable, Serialize, Deserialize, Clone, Debug)]
+#[derive(Insertable, DeriveSerialize, DeriveDeserialize, Clone, Debug)]
 #[table_name = "domain_status"]
 pub struct InsertDomainStatusRequest {
     pub date: NaiveDateTime,
@@ -208,41 +243,43 @@ impl Handler<InsertDomainStatusRequest> for DbExecutor {
     ) -> Self::Result {
         use crate::db::schema::domain_status::dsl::*;
 
-        let inserted = match diesel::insert_into(domain_status)
+        let inserted = diesel::insert_into(domain_status)
             .values(&insert_msg)
             .execute(&self.pool.get().unwrap())
-        {
-            Ok(_) => true,
-            Err(_) => false,
-        };
+            .is_ok();
 
-        if inserted && self.config.domain_statuses_rotation() {
-            //calculate date of greater self.config.rotate_days
-            let dt_rotate =
-                Utc::now() - Duration::days(self.config.domain_statuses_rotate_days() as i64);
+        if inserted {
+            if self.config.domain_statuses_rotation() {
+                //calculate date of greater self.config.rotate_days
+                let dt_rotate =
+                    Utc::now() - Duration::days(self.config.domain_statuses_rotate_days() as i64);
 
-            let subquery = domain_status
-                .filter(
-                    domain_id
-                        .eq(&insert_msg.domain_id)
-                        .and(date.lt(dt_rotate.naive_utc())),
-                )
-                .order(date.desc())
-                .select((id, filename))
-                .load::<(i32, String)>(&self.pool.get().unwrap())
-                .unwrap();
+                let subquery = domain_status
+                    .filter(
+                        domain_id
+                            .eq(&insert_msg.domain_id)
+                            .and(date.lt(dt_rotate.naive_utc())),
+                    )
+                    .order(date.desc())
+                    .select((id, filename))
+                    .load::<(i32, String)>(&self.pool.get().unwrap())
+                    .unwrap();
 
-            let ids = subquery.iter().map(|el| el.0).collect::<Vec<i32>>();
-            diesel::delete(domain_status.filter(id.eq_any(ids)))
-                .execute(&self.pool.get().unwrap())
-                .ok();
+                let ids = subquery.iter().map(|el| el.0).collect::<Vec<i32>>();
+                diesel::delete(domain_status.filter(id.eq_any(ids)))
+                    .execute(&self.pool.get().unwrap())
+                    .ok();
 
-            let filenames = subquery
-                .iter()
-                .map(|el| el.1.to_string())
-                .collect::<Vec<String>>();
+                let filenames = subquery
+                    .iter()
+                    .map(|el| el.1.to_string())
+                    .collect::<Vec<String>>();
 
-            Ok(filenames)
+                Ok(filenames)
+            } else {
+                let empty: Vec<String> = Vec::new();
+                Ok(empty)
+            }
         } else {
             Err(Error::new(
                 ErrorKind::Other,

@@ -93,11 +93,16 @@ fn parse_error_text(input_str: String) -> (String, String) {
 
     log::info!("from error: {}", &input_str);
 
-    let caps = re.captures(&input_str).unwrap();
-    let ger_field_value = |field_name| match &caps.name(field_name) {
-        Some(mtch) => mtch.as_str().to_string(),
+    let caps = re.captures(&input_str);
+
+    let ger_field_value = |field_name: &str| match &caps {
+        Some(cap) => match &cap.name(field_name) {
+            Some(mtch) => mtch.as_str().to_string(),
+            _ => String::from(""),
+        },
         _ => String::from(""),
     };
+
     let type_error = ger_field_value("type_error");
     let field_name = ger_field_value("field_name");
     (type_error, field_name)

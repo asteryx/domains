@@ -3,6 +3,8 @@
 extern crate json;
 #[macro_use]
 extern crate diesel;
+#[macro_use]
+extern crate validator_derive;
 extern crate actix;
 extern crate actix_files;
 extern crate actix_identity;
@@ -12,6 +14,7 @@ extern crate dotenv;
 extern crate listenfd;
 extern crate serde;
 extern crate tera;
+extern crate validator;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
