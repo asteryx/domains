@@ -91,6 +91,26 @@ pub struct Domain {
 }
 
 #[derive(Debug)]
+pub struct DomainInsert {
+    pub name: String,
+    pub url: String,
+    pub state: DomainState,
+    pub author: i32,
+}
+
+impl Message for DomainInsert {
+    type Result = io::Result<Domain>;
+}
+
+//impl Handler<DomainInsert> for DbExecutor {
+//    type Result = io::Result<Domain>;
+//
+//    fn handle(&mut self, domain_msg: DomainInsert, _ctx: &mut Self::Context) -> Self::Result {
+//        //        INSERT INTO persons (lastname,firstname) VALUES ('Smith', 'John') RETURNING id;
+//    }
+//}
+
+#[derive(Debug)]
 pub struct DomainList {
     pub limit: usize,
     pub offset: usize,
@@ -106,15 +126,17 @@ impl Handler<DomainList> for DbExecutor {
     type Result = io::Result<Vec<Domain>>;
 
     fn handle(&mut self, domain_msg: DomainList, _ctx: &mut Self::Context) -> Self::Result {
-        //        debug!("Get domain from {:?}", &domain_msg);
-
         let mut query = "SELECT * FROM domain ".to_string();
         if let Some(domain_state) = &domain_msg.state {
             query.push_str(format!("WHERE state = {} ", domain_state).as_str());
         }
 
         if let Some(search) = &domain_msg.search_string {
-            let core = format!("(name LIKE '%{}%' or url LIKE '%{}%') ", search, search);
+            let escape_string = search.replace("'", "''");
+            let core = format!(
+                "(name LIKE '%{}%' or url LIKE '%{}%') ",
+                &escape_string, &escape_string
+            );
             let query_search = if &domain_msg.state != &None {
                 format!("and {}", core)
             } else {
@@ -140,8 +162,8 @@ impl Handler<DomainList> for DbExecutor {
             Ok(domains_db) => Ok(domains_db),
             Err(err) => {
                 error!("Error in db search {}", err);
-                let vvv: Vec<Domain> = Vec::new();
-                Ok(vvv)
+                let empty: Vec<Domain> = Vec::new();
+                Ok(empty)
             }
         }
     }

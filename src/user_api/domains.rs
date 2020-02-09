@@ -6,9 +6,9 @@ use crate::AppState;
 use actix_web::{web, HttpRequest, HttpResponse};
 
 pub async fn domain_list(
-    //    req: HttpRequest,
     data: web::Data<AppState>,
     query_params: QueryParams,
+    _req: HttpRequest,
 ) -> Result<HttpResponse, ErrorResponse> {
     let db = &data.db;
     let limit = query_params.get("limit", "0").parse().unwrap_or(0);

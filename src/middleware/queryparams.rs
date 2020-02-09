@@ -8,6 +8,7 @@ use actix_web::{dev::ServiceRequest, dev::ServiceResponse, Error, HttpMessage, H
 use futures::future::{ok, Ready};
 use futures::Future;
 use std::collections::HashMap;
+use urldecode::decode;
 
 #[derive(Clone, Debug)]
 pub struct QueryParams {
@@ -15,10 +16,11 @@ pub struct QueryParams {
 }
 
 impl QueryParams {
-    fn new(query_string: String) -> Self {
+    fn new(encoded_query_string: String) -> Self {
         let mut inner: HashMap<String, String> = HashMap::new();
+        let decoded_string = decode(encoded_query_string);
 
-        let res = query_string
+        let res = decoded_string
             .split("&")
             .map(|part| part.to_string())
             .collect::<Vec<String>>();
