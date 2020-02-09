@@ -35,6 +35,16 @@ impl Display for DomainState {
     }
 }
 
+impl From<String> for DomainState {
+    fn from(input: String) -> DomainState {
+        match input.as_str() {
+            "1" => DomainState::Enabled,
+            "2" => DomainState::Disabled,
+            _ => DomainState::Removed,
+        }
+    }
+}
+
 impl<DB> diesel_serialize::ToSql<Integer, DB> for DomainState
 where
     DB: Backend,
@@ -84,7 +94,7 @@ pub struct Domain {
 pub struct DomainList {
     pub limit: usize,
     pub offset: usize,
-    pub status: Option<DomainState>,
+    pub state: Option<DomainState>,
     pub search_string: Option<String>,
 }
 
@@ -96,29 +106,40 @@ impl Handler<DomainList> for DbExecutor {
     type Result = io::Result<Vec<Domain>>;
 
     fn handle(&mut self, domain_msg: DomainList, _ctx: &mut Self::Context) -> Self::Result {
-        //        use crate::db::schema::domain::dsl::*;
-
-        debug!("Get domain from {:?}", &domain_msg);
+        //        debug!("Get domain from {:?}", &domain_msg);
 
         let mut query = "SELECT * FROM domain ".to_string();
-        if let Some(domain_state) = &domain_msg.status {
+        if let Some(domain_state) = &domain_msg.state {
             query.push_str(format!("WHERE state = {} ", domain_state).as_str());
         }
+
+        if let Some(search) = &domain_msg.search_string {
+            let core = format!("(name LIKE '%{}%' or url LIKE '%{}%') ", search, search);
+            let query_search = if &domain_msg.state != &None {
+                format!("and {}", core)
+            } else {
+                format!("WHERE {}", core)
+            };
+            query.push_str(query_search.as_str());
+        }
+
+        query.push_str("ORDER BY id ");
+
         if domain_msg.limit > 0usize {
             query.push_str(format!("LIMIT {} ", domain_msg.limit).as_str());
         }
         if domain_msg.offset > 0usize {
-            query.push_str(format!("LIMIT {} ", domain_msg.offset).as_str());
+            query.push_str(format!("OFFSET {} ", domain_msg.offset).as_str());
         }
-        query.push_str("ORDER BY id");
-        dbg!(&query);
+
+        debug!("`{}`", &query);
 
         let query_result = sql_query(query).load::<Domain>(&self.pool.get().unwrap());
 
         match query_result {
             Ok(domains_db) => Ok(domains_db),
             Err(err) => {
-                error!("Error id db search {}", err);
+                error!("Error in db search {}", err);
                 let vvv: Vec<Domain> = Vec::new();
                 Ok(vvv)
             }
