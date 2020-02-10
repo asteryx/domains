@@ -5,6 +5,7 @@ use crate::db::DbExecutor;
 use actix::{Handler, Message};
 use chrono::{Duration, NaiveDateTime, Utc};
 use diesel::backend::Backend;
+use diesel::expression::UncheckedBind;
 use diesel::prelude::*;
 use diesel::serialize as diesel_serialize;
 use diesel::sql_types::Integer;
@@ -156,21 +157,32 @@ impl Message for DomainList {
     type Result = io::Result<Vec<Domain>>;
 }
 
+enum QueryParams<'a> {
+    State(DomainState),
+    SearchString(&'a str),
+    Int(usize),
+}
+
 impl Handler<DomainList> for DbExecutor {
     type Result = io::Result<Vec<Domain>>;
 
     fn handle(&mut self, domain_msg: DomainList, _ctx: &mut Self::Context) -> Self::Result {
         let mut query = "SELECT * FROM domain ".to_string();
+        let mut params: Vec<QueryParams> = Vec::new();
+
+        let mut pconn = &self.pool.get().unwrap();
+        //        pconn.
+
         if let Some(domain_state) = &domain_msg.state {
-            query.push_str(format!("WHERE state = {} ", domain_state).as_str());
+            query.push_str("WHERE state = ? ");
+            params.push(QueryParams::State(domain_state.clone()));
         }
 
         if let Some(search) = &domain_msg.search_string {
-            let escape_string = search.replace("'", "''");
-            let core = format!(
-                "(name LIKE '%{}%' or url LIKE '%{}%') ",
-                &escape_string, &escape_string
-            );
+            params.push(QueryParams::SearchString(search));
+            params.push(QueryParams::SearchString(search));
+
+            let core = "(name LIKE '%?%' or url LIKE '%?%') ";
             let query_search = if &domain_msg.state != &None {
                 format!("and {}", core)
             } else {
@@ -182,16 +194,34 @@ impl Handler<DomainList> for DbExecutor {
         query.push_str("ORDER BY id ");
 
         if domain_msg.limit > 0usize {
-            query.push_str(format!("LIMIT {} ", domain_msg.limit).as_str());
+            query.push_str("LIMIT ? ");
+            params.push(QueryParams::Int(domain_msg.limit));
         }
         if domain_msg.offset > 0usize {
-            query.push_str(format!("OFFSET {} ", domain_msg.offset).as_str());
+            query.push_str("OFFSET ? ");
+            params.push(QueryParams::Int(domain_msg.offset));
         }
 
         debug!("`{}`", &query);
 
-        let query_result = sql_query(query).load::<Domain>(&self.pool.get().unwrap());
+        let query_result = if params.len() == 0 {
+            sql_query(&query).load::<Domain>(&self.pool.get().unwrap())
+        } else {
+            let mut is_first = true;
+            let mut q = sql_query(&query);
 
+            //            match &params[0]{
+            //                QueryParams::State(state) => sql_query(&query).bind::<Integer, _>(state),
+            //                QueryParams::SearchString(s_string) => sql_query(&query).bind::<String, _>(s_string.clone()),
+            //            }
+            for param in params {
+                if is_first {}
+            }
+
+            sql_query(query).load::<Domain>(&self.pool.get().unwrap())
+        };
+
+        let query_result: Result<Vec<Domain>, Error> = Ok(Vec::new());
         match query_result {
             Ok(domains_db) => Ok(domains_db),
             Err(err) => {
