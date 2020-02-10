@@ -160,6 +160,7 @@ impl Handler<DomainList> for DbExecutor {
     type Result = io::Result<Vec<Domain>>;
 
     fn handle(&mut self, domain_msg: DomainList, _ctx: &mut Self::Context) -> Self::Result {
+        //        TODO: Refactor this later when it can be possible
         let mut query = "SELECT * FROM domain ".to_string();
         if let Some(domain_state) = &domain_msg.state {
             query.push_str(format!("WHERE state = {} ", domain_state).as_str());
@@ -171,7 +172,7 @@ impl Handler<DomainList> for DbExecutor {
                 "(name LIKE '%{}%' or url LIKE '%{}%') ",
                 &escape_string, &escape_string
             );
-            let query_search = if &domain_msg.state != &None {
+            let query_search = if domain_msg.state != None {
                 format!("and {}", core)
             } else {
                 format!("WHERE {}", core)
