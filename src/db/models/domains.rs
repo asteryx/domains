@@ -163,12 +163,13 @@ impl Handler<DomainList> for DbExecutor {
     fn handle(&mut self, domain_msg: DomainList, _ctx: &mut Self::Context) -> Self::Result {
         use crate::db::schema::domain::dsl::*;
 
-        //        let stage1 = domain;
+        debug!("`{:#?}`", &domain_msg);
+
         let mut filter1 = None;
         let mut filter2 = None;
         let mut filter3 = None;
 
-        if let Some(state_domain) = domain_msg.state {
+        if let Some(state_domain) = &domain_msg.state {
             filter1 = Some(state.eq(state_domain));
         }
 
@@ -181,38 +182,78 @@ impl Handler<DomainList> for DbExecutor {
                     )
                 }
             }
-            Some(val) => {
+            Some(_) => {
                 if let Some(domain_search) = domain_msg.search_string {
-                    filter3 = Some(
-                        val.and(
-                            name.ilike(format!("%{}%", domain_search))
-                                .or(url.ilike(format!("%{}%", domain_search))),
-                        ),
-                    )
+                    if let Some(state_domain) = &domain_msg.state {
+                        filter3 = Some(
+                            state.eq(state_domain).and(
+                                name.ilike(format!("%{}%", domain_search))
+                                    .or(url.ilike(format!("%{}%", domain_search))),
+                            ),
+                        )
+                    }
                 }
             }
         }
 
-        debug!("`{}`", &query);
+        let query_result = match (filter1, filter2, filter3) {
+            (Some(expr), None, None) => match (domain_msg.limit, domain_msg.offset) {
+                (0, x) if x > 0 => domain
+                    .filter(expr)
+                    .offset(x as i64)
+                    .load::<Domain>(&self.pool.get().unwrap()),
+                (x, 0) if x > 0 => domain
+                    .filter(expr)
+                    .limit(x as i64)
+                    .load::<Domain>(&self.pool.get().unwrap()),
+                (x, y) if x > 0 && y > 0 => domain
+                    .filter(expr)
+                    .limit(x as i64)
+                    .offset(y as i64)
+                    .load::<Domain>(&self.pool.get().unwrap()),
+                _ => domain
+                    .filter(expr)
+                    .load::<Domain>(&self.pool.get().unwrap()),
+            },
+            (_, Some(expr), None) => match (domain_msg.limit, domain_msg.offset) {
+                (0, x) if x > 0 => domain
+                    .filter(expr)
+                    .offset(x as i64)
+                    .load::<Domain>(&self.pool.get().unwrap()),
+                (x, 0) if x > 0 => domain
+                    .filter(expr)
+                    .limit(x as i64)
+                    .load::<Domain>(&self.pool.get().unwrap()),
+                (x, y) if x > 0 && y > 0 => domain
+                    .filter(expr)
+                    .limit(x as i64)
+                    .offset(y as i64)
+                    .load::<Domain>(&self.pool.get().unwrap()),
+                _ => domain
+                    .filter(expr)
+                    .load::<Domain>(&self.pool.get().unwrap()),
+            },
+            (_, _, Some(expr)) => match (domain_msg.limit, domain_msg.offset) {
+                (0, x) if x > 0 => domain
+                    .filter(expr)
+                    .offset(x as i64)
+                    .load::<Domain>(&self.pool.get().unwrap()),
+                (x, 0) if x > 0 => domain
+                    .filter(expr)
+                    .limit(x as i64)
+                    .load::<Domain>(&self.pool.get().unwrap()),
+                (x, y) if x > 0 && y > 0 => domain
+                    .filter(expr)
+                    .limit(x as i64)
+                    .offset(y as i64)
+                    .load::<Domain>(&self.pool.get().unwrap()),
+                _ => domain
+                    .filter(expr)
+                    .load::<Domain>(&self.pool.get().unwrap()),
+            },
+            _ => domain.load::<Domain>(&self.pool.get().unwrap()),
+        };
 
-        //        let query_result = if params.len() == 0 {
-        //            sql_query(&query).load::<Domain>(&self.pool.get().unwrap())
-        //        } else {
-        //            let mut is_first = true;
-        //            let mut q = sql_query(&query);
-        //
-        //            //            match &params[0]{
-        //            //                QueryParams::State(state) => sql_query(&query).bind::<Integer, _>(state),
-        //            //                QueryParams::SearchString(s_string) => sql_query(&query).bind::<String, _>(s_string.clone()),
-        //            //            }
-        //            for param in params {
-        //                if is_first {}
-        //            }
-        //
-        //            sql_query(query).load::<Domain>(&self.pool.get().unwrap())
-        //        };
-
-        let query_result: Result<Vec<Domain>, Error> = Ok(Vec::new());
         match query_result {
             Ok(domains_db) => Ok(domains_db),
             Err(err) => {
