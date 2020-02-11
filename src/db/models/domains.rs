@@ -157,69 +157,60 @@ impl Message for DomainList {
     type Result = io::Result<Vec<Domain>>;
 }
 
-enum QueryParams<'a> {
-    State(DomainState),
-    SearchString(&'a str),
-    Int(usize),
-}
-
 impl Handler<DomainList> for DbExecutor {
     type Result = io::Result<Vec<Domain>>;
 
     fn handle(&mut self, domain_msg: DomainList, _ctx: &mut Self::Context) -> Self::Result {
-        let mut query = "SELECT * FROM domain ".to_string();
-        let mut params: Vec<QueryParams> = Vec::new();
+        use crate::db::schema::domain::dsl::*;
 
-        let mut pconn = &self.pool.get().unwrap();
-        //        pconn.
+        //        let stage1 = domain;
+        let mut filter1 = None;
+        let mut filter2 = None;
+        let mut filter3 = None;
 
-        if let Some(domain_state) = &domain_msg.state {
-            query.push_str("WHERE state = ? ");
-            params.push(QueryParams::State(domain_state.clone()));
+        if let Some(state_domain) = domain_msg.state {
+            filter1 = Some(state.eq(state_domain));
         }
 
-        if let Some(search) = &domain_msg.search_string {
-            params.push(QueryParams::SearchString(search));
-            params.push(QueryParams::SearchString(search));
-
-            let core = "(name LIKE '%?%' or url LIKE '%?%') ";
-            let query_search = if &domain_msg.state != &None {
-                format!("and {}", core)
-            } else {
-                format!("WHERE {}", core)
-            };
-            query.push_str(query_search.as_str());
-        }
-
-        query.push_str("ORDER BY id ");
-
-        if domain_msg.limit > 0usize {
-            query.push_str("LIMIT ? ");
-            params.push(QueryParams::Int(domain_msg.limit));
-        }
-        if domain_msg.offset > 0usize {
-            query.push_str("OFFSET ? ");
-            params.push(QueryParams::Int(domain_msg.offset));
+        match filter1 {
+            None => {
+                if let Some(domain_search) = domain_msg.search_string {
+                    filter2 = Some(
+                        name.ilike(format!("%{}%", domain_search))
+                            .or(url.ilike(format!("%{}%", domain_search))),
+                    )
+                }
+            }
+            Some(val) => {
+                if let Some(domain_search) = domain_msg.search_string {
+                    filter3 = Some(
+                        val.and(
+                            name.ilike(format!("%{}%", domain_search))
+                                .or(url.ilike(format!("%{}%", domain_search))),
+                        ),
+                    )
+                }
+            }
         }
 
         debug!("`{}`", &query);
 
-        let query_result = if params.len() == 0 {
-            sql_query(&query).load::<Domain>(&self.pool.get().unwrap())
-        } else {
-            let mut is_first = true;
-            let mut q = sql_query(&query);
-
-            //            match &params[0]{
-            //                QueryParams::State(state) => sql_query(&query).bind::<Integer, _>(state),
-            //                QueryParams::SearchString(s_string) => sql_query(&query).bind::<String, _>(s_string.clone()),
-            //            }
-            for param in params {
-                if is_first {}
-            }
-
-            sql_query(query).load::<Domain>(&self.pool.get().unwrap())
-        };
+        //        let query_result = if params.len() == 0 {
+        //            sql_query(&query).load::<Domain>(&self.pool.get().unwrap())
+        //        } else {
+        //            let mut is_first = true;
+        //            let mut q = sql_query(&query);
+        //
+        //            //            match &params[0]{
+        //            //                QueryParams::State(state) => sql_query(&query).bind::<Integer, _>(state),
+        //            //                QueryParams::SearchString(s_string) => sql_query(&query).bind::<String, _>(s_string.clone()),
+        //            //            }
+        //            for param in params {
+        //                if is_first {}
+        //            }
+        //
+        //            sql_query(query).load::<Domain>(&self.pool.get().unwrap())
+        //        };
 
         let query_result: Result<Vec<Domain>, Error> = Ok(Vec::new());
         match query_result {
