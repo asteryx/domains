@@ -8,11 +8,21 @@ use actix_web::{web, HttpRequest, HttpResponse};
 use serde_derive::{Deserialize, Serialize};
 use validator::Validate;
 
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct LimitOffset {
+    limit: Option<i32>,
+    offset: Option<i32>,
+}
+
+// todo remove queryparams
 pub async fn domain_list(
     data: web::Data<AppState>,
     query_params: QueryParams,
+    que: web::Query<LimitOffset>,
     _req: HttpRequest,
 ) -> Result<HttpResponse, ErrorResponse> {
+    dbg!(que);
+
     let db = &data.db;
     let limit = query_params.get("limit", "0").parse().unwrap_or(0);
     let offset = query_params.get("offset", "0").parse().unwrap_or(0);
@@ -81,3 +91,10 @@ pub async fn domain_create(
 
     Ok(json_response(res?))
 }
+
+// pub async fn domain_delete(
+//     input_domain: web::Json<DomainCreate>,
+//     claims: Claims,
+//     data: web::Data<AppState>,
+// ) -> Result<HttpResponse, ErrorResponse> {
+// }
