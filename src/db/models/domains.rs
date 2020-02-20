@@ -5,11 +5,11 @@ use crate::db::DbExecutor;
 use actix::{Handler, Message};
 use chrono::{Duration, NaiveDateTime, Utc};
 use diesel::backend::Backend;
-use diesel::expression::UncheckedBind;
+use diesel::debug_query;
+use diesel::deserialize as diesel_deserialize;
 use diesel::prelude::*;
 use diesel::serialize as diesel_serialize;
 use diesel::sql_types::Integer;
-use diesel::{deserialize as diesel_deserialize, sql_query};
 use serde_derive::{Deserialize as DeriveDeserialize, Serialize as DeriveSerialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::fmt::{Display, Formatter};
@@ -161,98 +161,32 @@ impl Handler<DomainList> for DbExecutor {
     type Result = io::Result<Vec<Domain>>;
 
     fn handle(&mut self, domain_msg: DomainList, _ctx: &mut Self::Context) -> Self::Result {
-        use crate::db::schema::domain::dsl::*;
-
-        debug!("`{:#?}`", &domain_msg);
-
-        let mut filter1 = None;
-        let mut filter2 = None;
-        let mut filter3 = None;
+        let mut query = domain::table.into_boxed();
 
         if let Some(state_domain) = &domain_msg.state {
-            filter1 = Some(state.eq(state_domain));
+            query = query.filter(domain::state.eq(state_domain));
         }
 
-        match filter1 {
-            None => {
-                if let Some(domain_search) = domain_msg.search_string {
-                    filter2 = Some(
-                        name.ilike(format!("%{}%", domain_search))
-                            .or(url.ilike(format!("%{}%", domain_search))),
-                    )
-                }
-            }
-            Some(_) => {
-                if let Some(domain_search) = domain_msg.search_string {
-                    if let Some(state_domain) = &domain_msg.state {
-                        filter3 = Some(
-                            state.eq(state_domain).and(
-                                name.ilike(format!("%{}%", domain_search))
-                                    .or(url.ilike(format!("%{}%", domain_search))),
-                            ),
-                        )
-                    }
-                }
-            }
+        if let Some(domain_search) = domain_msg.search_string {
+            query = query.filter(
+                domain::name
+                    .ilike(format!("%{}%", domain_search))
+                    .or(domain::url.ilike(format!("%{}%", domain_search))),
+            );
         }
 
-        let query_result = match (filter1, filter2, filter3) {
-            (Some(expr), None, None) => match (domain_msg.limit, domain_msg.offset) {
-                (0, x) if x > 0 => domain
-                    .filter(expr)
-                    .offset(x as i64)
-                    .load::<Domain>(&self.pool.get().unwrap()),
-                (x, 0) if x > 0 => domain
-                    .filter(expr)
-                    .limit(x as i64)
-                    .load::<Domain>(&self.pool.get().unwrap()),
-                (x, y) if x > 0 && y > 0 => domain
-                    .filter(expr)
-                    .limit(x as i64)
-                    .offset(y as i64)
-                    .load::<Domain>(&self.pool.get().unwrap()),
-                _ => domain
-                    .filter(expr)
-                    .load::<Domain>(&self.pool.get().unwrap()),
-            },
-            (_, Some(expr), None) => match (domain_msg.limit, domain_msg.offset) {
-                (0, x) if x > 0 => domain
-                    .filter(expr)
-                    .offset(x as i64)
-                    .load::<Domain>(&self.pool.get().unwrap()),
-                (x, 0) if x > 0 => domain
-                    .filter(expr)
-                    .limit(x as i64)
-                    .load::<Domain>(&self.pool.get().unwrap()),
-                (x, y) if x > 0 && y > 0 => domain
-                    .filter(expr)
-                    .limit(x as i64)
-                    .offset(y as i64)
-                    .load::<Domain>(&self.pool.get().unwrap()),
-                _ => domain
-                    .filter(expr)
-                    .load::<Domain>(&self.pool.get().unwrap()),
-            },
-            (_, _, Some(expr)) => match (domain_msg.limit, domain_msg.offset) {
-                (0, x) if x > 0 => domain
-                    .filter(expr)
-                    .offset(x as i64)
-                    .load::<Domain>(&self.pool.get().unwrap()),
-                (x, 0) if x > 0 => domain
-                    .filter(expr)
-                    .limit(x as i64)
-                    .load::<Domain>(&self.pool.get().unwrap()),
-                (x, y) if x > 0 && y > 0 => domain
-                    .filter(expr)
-                    .limit(x as i64)
-                    .offset(y as i64)
-                    .load::<Domain>(&self.pool.get().unwrap()),
-                _ => domain
-                    .filter(expr)
-                    .load::<Domain>(&self.pool.get().unwrap()),
-            },
-            _ => domain.load::<Domain>(&self.pool.get().unwrap()),
-        };
+        if domain_msg.limit > 0 {
+            query = query.limit(domain_msg.limit as i64);
+        }
+
+        if domain_msg.offset > 0 {
+            query = query.offset(domain_msg.offset as i64);
+        }
+
+        let sql = debug_query::<_, _>(&query).to_string();
+        debug!("`{}`", sql);
+
+        let query_result = query.load::<Domain>(&self.pool.get().unwrap());
 
         match query_result {
             Ok(domains_db) => Ok(domains_db),
