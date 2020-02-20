@@ -5,10 +5,11 @@ use crate::db::DbExecutor;
 use actix::{Handler, Message};
 use chrono::{Duration, NaiveDateTime, Utc};
 use diesel::backend::Backend;
+use diesel::debug_query;
+use diesel::deserialize as diesel_deserialize;
 use diesel::prelude::*;
 use diesel::serialize as diesel_serialize;
 use diesel::sql_types::Integer;
-use diesel::{deserialize as diesel_deserialize, sql_query};
 use serde_derive::{Deserialize as DeriveDeserialize, Serialize as DeriveSerialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::fmt::{Display, Formatter};
@@ -160,38 +161,32 @@ impl Handler<DomainList> for DbExecutor {
     type Result = io::Result<Vec<Domain>>;
 
     fn handle(&mut self, domain_msg: DomainList, _ctx: &mut Self::Context) -> Self::Result {
-        //        TODO: Refactor this later when it can be possible
-        let mut query = "SELECT * FROM domain ".to_string();
-        if let Some(domain_state) = &domain_msg.state {
-            query.push_str(format!("WHERE state = {} ", domain_state).as_str());
+        let mut query = domain::table.into_boxed();
+
+        if let Some(state_domain) = &domain_msg.state {
+            query = query.filter(domain::state.eq(state_domain));
         }
 
-        if let Some(search) = &domain_msg.search_string {
-            let escape_string = search.replace("'", "''");
-            let core = format!(
-                "(name LIKE '%{}%' or url LIKE '%{}%') ",
-                &escape_string, &escape_string
+        if let Some(domain_search) = domain_msg.search_string {
+            query = query.filter(
+                domain::name
+                    .ilike(format!("%{}%", domain_search))
+                    .or(domain::url.ilike(format!("%{}%", domain_search))),
             );
-            let query_search = if domain_msg.state != None {
-                format!("and {}", core)
-            } else {
-                format!("WHERE {}", core)
-            };
-            query.push_str(query_search.as_str());
         }
 
-        query.push_str("ORDER BY id ");
-
-        if domain_msg.limit > 0usize {
-            query.push_str(format!("LIMIT {} ", domain_msg.limit).as_str());
-        }
-        if domain_msg.offset > 0usize {
-            query.push_str(format!("OFFSET {} ", domain_msg.offset).as_str());
+        if domain_msg.limit > 0 {
+            query = query.limit(domain_msg.limit as i64);
         }
 
-        debug!("`{}`", &query);
+        if domain_msg.offset > 0 {
+            query = query.offset(domain_msg.offset as i64);
+        }
 
-        let query_result = sql_query(query).load::<Domain>(&self.pool.get().unwrap());
+        let sql = debug_query::<_, _>(&query).to_string();
+        debug!("`{}`", sql);
+
+        let query_result = query.load::<Domain>(&self.pool.get().unwrap());
 
         match query_result {
             Ok(domains_db) => Ok(domains_db),
