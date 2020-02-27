@@ -147,8 +147,8 @@ impl Handler<DomainInsert> for DbExecutor {
 
 #[derive(Debug)]
 pub struct DomainList {
-    pub limit: usize,
-    pub offset: usize,
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
     pub state: Option<DomainState>,
     pub search_string: Option<String>,
 }
@@ -175,12 +175,12 @@ impl Handler<DomainList> for DbExecutor {
             );
         }
 
-        if domain_msg.limit > 0 {
-            query = query.limit(domain_msg.limit as i64);
+        if let Some(limit) = domain_msg.limit {
+            query = query.limit(limit as i64);
         }
 
-        if domain_msg.offset > 0 {
-            query = query.offset(domain_msg.offset as i64);
+        if let Some(offset) = domain_msg.offset {
+            query = query.offset(offset as i64);
         }
 
         let sql = debug_query::<_, _>(&query).to_string();

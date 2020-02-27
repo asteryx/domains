@@ -1,6 +1,6 @@
 use crate::jwt;
 use actix::MailboxError;
-use actix_web::error::JsonPayloadError;
+use actix_web::error::{JsonPayloadError, QueryPayloadError};
 use actix_web::http::StatusCode;
 use actix_web::{HttpRequest, HttpResponse, ResponseError};
 use regex::Regex;
@@ -58,6 +58,15 @@ impl From<std::io::Error> for ErrorResponse {
     }
 }
 
+impl From<QueryPayloadError> for ErrorResponse {
+    fn from(outer: QueryPayloadError) -> Self {
+        ErrorResponse {
+            msg: format!("{}", outer),
+            status: 400,
+        }
+    }
+}
+
 pub fn json_error_handler(err: JsonPayloadError, _req: &HttpRequest) -> actix_web::Error {
     let error_message: String = match err {
         JsonPayloadError::Payload(payload_error) => format!("{}", payload_error),
@@ -78,6 +87,18 @@ pub fn json_error_handler(err: JsonPayloadError, _req: &HttpRequest) -> actix_we
             }
             tmp
         }
+        _ => format!("{}", err),
+    };
+    ErrorResponse {
+        msg: error_message,
+        status: 400,
+    }
+    .into()
+}
+
+pub fn query_error_handler(err: QueryPayloadError, _req: &HttpRequest) -> actix_web::Error {
+    let error_message: String = match err {
+        QueryPayloadError::Deserialize(deserialize_error) => format!("{}", deserialize_error),
         _ => format!("{}", err),
     };
     ErrorResponse {

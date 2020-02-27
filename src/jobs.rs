@@ -10,8 +10,8 @@ use std::time::Duration;
 pub fn ping_fn(state: Arc<web::Data<AppState>>) {
     loop {
         let result = block_on(state.db.send(DomainList {
-            limit: 0,
-            offset: 0,
+            limit: None,
+            offset: None,
             state: Some(DomainState::Enabled),
             search_string: None,
         }))

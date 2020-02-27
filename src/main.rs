@@ -38,7 +38,6 @@ mod share;
 mod user_api;
 mod utils;
 
-use crate::middleware::QueryParametersService;
 pub use utils::{config, errors, guards, hashers, jwt, router, state, state::AppState};
 
 #[actix_rt::main]
@@ -81,9 +80,9 @@ async fn main() -> io::Result<()> {
                     .limit(1024)
                     .error_handler(errors::json_error_handler),
             )
+            .app_data(web::QueryConfig::default().error_handler(errors::query_error_handler))
             .wrap(actix_middleware::Logger::default())
             .wrap(AuthenticationService::default())
-            .wrap(QueryParametersService::default())
             .configure(router::configuration)
     });
 
