@@ -6,16 +6,16 @@ use actix::{Handler, Message};
 use chrono::{Duration, NaiveDateTime, Utc};
 use diesel::backend::Backend;
 use diesel::debug_query;
-use diesel::deserialize as diesel_deserialize;
 use diesel::prelude::*;
-use diesel::serialize as diesel_serialize;
 use diesel::sql_types::Integer;
+use diesel::{deserialize as diesel_deserialize, serialize as diesel_serialize};
 use serde_derive::{Deserialize as DeriveDeserialize, Serialize as DeriveSerialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::fmt::{Display, Formatter};
 use std::io;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
+use validator::Validate;
 
 #[repr(i32)]
 #[derive(Debug, PartialEq, AsExpression, Clone, Serialize_repr, Deserialize_repr, FromSqlRow)]
@@ -99,29 +99,41 @@ pub struct Domain {
     pub author: i32,
 }
 
-#[derive(Debug, Insertable)]
+#[derive(Debug, Insertable, DeriveSerialize, DeriveDeserialize, Validate)]
 #[table_name = "domain"]
-pub struct DomainInsert {
+pub struct DomainInsertUpdate {
+    pub id: Option<i32>,
     pub name: String,
+    #[validate(url)]
     pub url: String,
     pub state: DomainState,
-    pub author: i32,
+    pub author: Option<i32>,
 }
 
-impl Message for DomainInsert {
+impl Message for DomainInsertUpdate {
     type Result = io::Result<Domain>;
 }
 
-impl Handler<DomainInsert> for DbExecutor {
+impl Handler<DomainInsertUpdate> for DbExecutor {
     type Result = io::Result<Domain>;
 
-    fn handle(&mut self, domain_msg: DomainInsert, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, domain_msg: DomainInsertUpdate, _ctx: &mut Self::Context) -> Self::Result {
         use crate::db::schema::domain::dsl::*;
 
-        let inserted = diesel::insert_into(domain)
-            .values(&domain_msg)
-            .returning(id)
-            .get_results::<i32>(&self.pool.get().unwrap());
+        let inserted = match domain_msg.id {
+            Some(domain_id) => diesel::update(domain.filter(id.eq(domain_id)))
+                .set((
+                    name.eq(&domain_msg.name),
+                    url.eq(&domain_msg.url),
+                    state.eq(&domain_msg.state),
+                ))
+                .returning(id)
+                .get_results::<i32>(&self.pool.get().unwrap()),
+            _ => diesel::insert_into(domain)
+                .values(&domain_msg)
+                .returning(id)
+                .get_results::<i32>(&self.pool.get().unwrap()),
+        };
 
         match inserted {
             Ok(value) => {
@@ -131,7 +143,10 @@ impl Handler<DomainInsert> for DbExecutor {
                         name: domain_msg.name,
                         url: domain_msg.url,
                         state: domain_msg.state,
-                        author: domain_msg.author,
+                        author: match domain_msg.author {
+                            Some(a) => a,
+                            _ => 0,
+                        },
                     })
                 } else {
                     Err(io::Error::new(
@@ -209,7 +224,7 @@ pub struct DomainStatus {
     pub loading_time: i32,
     pub status_code: i32,
     pub headers: String,
-    pub filename: String,
+    pub filename: Option<String>,
     #[column_name = "domain_id"]
     pub domain: i32,
 }
@@ -221,16 +236,16 @@ pub struct InsertDomainStatusRequest {
     pub loading_time: i32,
     pub status_code: i32,
     pub headers: String,
-    pub filename: String,
+    pub filename: Option<String>,
     pub domain_id: i32,
 }
 
 impl Message for InsertDomainStatusRequest {
-    type Result = io::Result<Vec<String>>;
+    type Result = io::Result<Vec<Option<String>>>;
 }
 
 impl Handler<InsertDomainStatusRequest> for DbExecutor {
-    type Result = io::Result<Vec<String>>;
+    type Result = io::Result<Vec<Option<String>>>;
 
     fn handle(
         &mut self,
@@ -258,7 +273,7 @@ impl Handler<InsertDomainStatusRequest> for DbExecutor {
                     )
                     .order(date.desc())
                     .select((id, filename))
-                    .load::<(i32, String)>(&self.pool.get().unwrap())
+                    .load::<(i32, Option<String>)>(&self.pool.get().unwrap())
                     .unwrap();
 
                 let ids = subquery.iter().map(|el| el.0).collect::<Vec<i32>>();
@@ -267,13 +282,14 @@ impl Handler<InsertDomainStatusRequest> for DbExecutor {
                     .ok();
 
                 let filenames = subquery
-                    .iter()
-                    .map(|el| el.1.to_string())
-                    .collect::<Vec<String>>();
+                    .into_iter()
+                    .filter(|el| el.1 != None)
+                    .map(|el| el.1)
+                    .collect::<Vec<Option<String>>>();
 
                 Ok(filenames)
             } else {
-                let empty: Vec<String> = Vec::new();
+                let empty: Vec<Option<String>> = Vec::new();
                 Ok(empty)
             }
         } else {

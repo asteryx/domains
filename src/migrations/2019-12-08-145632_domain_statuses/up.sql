@@ -6,7 +6,7 @@ CREATE TABLE domain_status (
     loading_time INTEGER DEFAULT 0 NOT NULL,
     status_code INTEGER DEFAULT 0 NOT NULL,
     headers VARCHAR NOT NULL,
-    filename VARCHAR NOT NULL,
+    filename VARCHAR,
     domain_id INTEGER NOT NULL,
     FOREIGN KEY(domain_id) REFERENCES domain(id)
 );

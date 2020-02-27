@@ -1,7 +1,7 @@
 use crate::guards::{login_required, unlogged_required};
 use crate::index;
 use crate::user_api;
-use crate::user_api::{domain_create, domain_list};
+use crate::user_api::{domain_create, domain_list, domain_update};
 use actix_files as fs;
 use actix_web::{guard, web, HttpResponse, Scope};
 
@@ -24,7 +24,8 @@ pub fn user_api_scope(path: &str) -> Scope {
                     web::resource(vec!["", "/"])
                         .guard(guard::fn_guard(login_required))
                         .route(web::get().to(domain_list))
-                        .route(web::post().to(domain_create)),
+                        .route(web::post().to(domain_create))
+                        .route(web::put().to(domain_update)),
                 )
                 .default_service(web::resource("").route(web::to(HttpResponse::Forbidden))),
         )

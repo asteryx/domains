@@ -46,7 +46,7 @@ async fn main() -> io::Result<()> {
 
     //    let db = SyncArbiter::start(num_cpus::get() * 3, move || db::DbExecutor::new());
     let db = SyncArbiter::start(2, move || db::DbExecutor::default());
-    let ping: Addr<Ping> = SyncArbiter::start(2, || Ping::new());
+    let ping: Addr<Ping> = SyncArbiter::start(2, || Ping::default());
 
     let app_state: AppState = AppState::new(db.clone(), ping.clone());
     let jobs_state: AppState = AppState::new(db.clone(), ping.clone());

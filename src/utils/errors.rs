@@ -6,6 +6,7 @@ use actix_web::{HttpRequest, HttpResponse, ResponseError};
 use regex::Regex;
 use serde_derive::Serialize;
 use serde_json::{json, to_string_pretty};
+use std::error::Error;
 use std::fmt::{Display, Formatter, Result};
 
 #[derive(Debug, Serialize)]
@@ -99,7 +100,7 @@ pub fn json_error_handler(err: JsonPayloadError, _req: &HttpRequest) -> actix_we
 pub fn query_error_handler(err: QueryPayloadError, _req: &HttpRequest) -> actix_web::Error {
     let error_message: String = match err {
         QueryPayloadError::Deserialize(deserialize_error) => format!("{}", deserialize_error),
-        _ => format!("{}", err),
+        // _ => format!("{}", err),
     };
     ErrorResponse {
         msg: error_message,

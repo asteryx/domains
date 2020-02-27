@@ -109,8 +109,8 @@ pub struct Ping {
     client: Client,
 }
 
-impl Ping {
-    pub fn new() -> Ping {
+impl Default for Ping {
+    fn default() -> Ping {
         Ping {
             client: Client::builder()
                 .timeout(Duration::from_secs(3))
@@ -130,7 +130,7 @@ impl Handler<PingRequest> for Ping {
     fn handle(&mut self, msg: PingRequest, _ctx: &mut SyncContext<Self>) -> Self::Result {
         let media_root = msg.state.config.media_root();
 
-        let folders = format!("{}{}", &media_root, &msg.domain.name);
+        let folders = format!("{}{}", &media_root, &msg.domain.id);
         fs::create_dir_all(&folders).unwrap();
 
         let now = Utc::now();
@@ -138,7 +138,7 @@ impl Handler<PingRequest> for Ping {
 
         let filename = format!(
             "{}/{}.{}",
-            &msg.domain.name,
+            &msg.domain.id,
             &timestamp,
             &msg.state.config.image_format()
         );
@@ -169,35 +169,44 @@ impl Handler<PingRequest> for Ping {
             .arg(&full_path)
             .status();
 
-        if let Ok(command_result) = command_result {
-            if command_result.success() {
-                block_on(msg.state.db.send(InsertDomainStatusRequest {
-                    date: now.naive_utc(),
-                    loading_time: duration_since as i32,
-                    headers: headers_str,
-                    status_code: u16::from(status) as i32,
-                    filename: filename,
-                    domain_id: msg.domain.id,
-                }))
-                .map_err(|err| IoError::new(IoErrorKind::Interrupted, err))
-                .and_then(|result| match result {
-                    Ok(filenames_for_remove) => {
-                        filenames_for_remove.iter().for_each(|name| {
-                            fs::remove_file(format!("{}{}", &media_root, name)).unwrap();
-                            ()
-                        });
-                        Ok(())
-                    }
-                    Err(err) => {
-                        error!("{}", err);
-                        error!("need remove {}", &full_path);
-                        fs::remove_file(&full_path).unwrap();
-                        Ok(())
-                    }
-                })
-                .ok();
+        let file_name_to_db = match command_result {
+            Ok(command_result) => {
+                if command_result.success() {
+                    Some(filename)
+                } else {
+                    None
+                }
             }
+            _ => None,
         };
+
+        block_on(msg.state.db.send(InsertDomainStatusRequest {
+            date: now.naive_utc(),
+            loading_time: duration_since as i32,
+            headers: headers_str,
+            status_code: u16::from(status) as i32,
+            filename: file_name_to_db,
+            domain_id: msg.domain.id,
+        }))
+        .map_err(|err| IoError::new(IoErrorKind::Interrupted, err))
+        .and_then(|result| match result {
+            Ok(filenames_for_remove) => {
+                filenames_for_remove.iter().for_each(|opt_name| {
+                    if let Some(name) = opt_name {
+                        fs::remove_file(format!("{}{}", &media_root, name)).unwrap();
+                    };
+                    ()
+                });
+                Ok(())
+            }
+            Err(err) => {
+                error!("{}", err);
+                error!("need remove {}", &full_path);
+                fs::remove_file(&full_path).unwrap();
+                Ok(())
+            }
+        })
+        .ok();
 
         Ok(true)
     }

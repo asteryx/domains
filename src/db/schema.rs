@@ -15,7 +15,7 @@ table! {
         loading_time -> Int4,
         status_code -> Int4,
         headers -> Varchar,
-        filename -> Varchar,
+        filename -> Nullable<Varchar>,
         domain_id -> Int4,
     }
 }
