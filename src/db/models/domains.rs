@@ -16,9 +16,10 @@ use std::io;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
 use validator::Validate;
+use strum_macros::EnumIter;
 
 #[repr(i32)]
-#[derive(Debug, PartialEq, AsExpression, Clone, Copy, Serialize_repr, Deserialize_repr, FromSqlRow)]
+#[derive(Debug, PartialEq, AsExpression, Clone, Copy, Serialize_repr, Deserialize_repr, FromSqlRow, EnumIter)]
 #[sql_type = "Integer"]
 pub enum DomainState {
     Enabled = 1,
