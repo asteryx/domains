@@ -161,6 +161,8 @@ impl Handler<DomainList> for DbExecutor {
 
         if let Some(state_domain) = &domain_msg.state {
             query = query.filter(domain::state.eq(state_domain));
+        } else {
+            query = query.filter(domain::state.ne(DomainState::Removed));
         }
 
         if let Some(domain_search) = domain_msg.search_string {
