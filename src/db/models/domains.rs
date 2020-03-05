@@ -18,7 +18,7 @@ use std::io::{Error, ErrorKind};
 use validator::Validate;
 
 #[repr(i32)]
-#[derive(Debug, PartialEq, AsExpression, Clone, Serialize_repr, Deserialize_repr, FromSqlRow)]
+#[derive(Debug, PartialEq, AsExpression, Clone, Copy, Serialize_repr, Deserialize_repr, FromSqlRow)]
 #[sql_type = "Integer"]
 pub enum DomainState {
     Enabled = 1,
@@ -28,22 +28,7 @@ pub enum DomainState {
 
 impl Display for DomainState {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        let res = match self {
-            DomainState::Enabled => "1".to_string(),
-            DomainState::Disabled => "2".to_string(),
-            _ => "0".to_string(),
-        };
-        write!(f, "{}", res)
-    }
-}
-
-impl From<String> for DomainState {
-    fn from(input: String) -> DomainState {
-        match input.as_str() {
-            "1" => DomainState::Enabled,
-            "2" => DomainState::Disabled,
-            _ => DomainState::Removed,
-        }
+        write!(f, "{}", *self as i32)
     }
 }
 
@@ -56,12 +41,7 @@ where
         &self,
         out: &mut diesel_serialize::Output<W, DB>,
     ) -> diesel_serialize::Result {
-        match self {
-            DomainState::Enabled => 1,
-            DomainState::Disabled => 2,
-            _ => 0,
-        }
-        .to_sql(out)
+        (*self as i32).to_sql(out)
     }
 }
 
