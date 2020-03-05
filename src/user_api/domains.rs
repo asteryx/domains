@@ -97,6 +97,11 @@ pub async fn domain_update(
     ))
 }
 
-pub async fn domain_status(data: web::Data<AppState>) -> Result<HttpResponse, ErrorResponse> {
-    Ok(json_response(DomainState::Removed))
+pub async fn domain_status(_: web::Data<AppState>) -> Result<HttpResponse, ErrorResponse> {
+    use std::collections::HashMap;
+    use strum::IntoEnumIterator;
+    use std::iter::FromIterator;
+
+    let res: HashMap<_, _> = FromIterator::from_iter(DomainState::iter().map(|ds| (ds as i32, ds.to_string())));
+    Ok(json_response(res))
 }
