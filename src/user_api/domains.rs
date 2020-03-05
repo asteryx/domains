@@ -96,3 +96,7 @@ pub async fn domain_update(
             .await??,
     ))
 }
+
+pub async fn domain_status(data: web::Data<AppState>) -> Result<HttpResponse, ErrorResponse> {
+    Ok(json_response(DomainState::Removed))
+}
