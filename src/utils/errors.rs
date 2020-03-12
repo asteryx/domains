@@ -6,7 +6,6 @@ use actix_web::{HttpRequest, HttpResponse, ResponseError};
 use regex::Regex;
 use serde_derive::Serialize;
 use serde_json::{json, to_string_pretty};
-use std::error::Error;
 use std::fmt::{Display, Formatter, Result};
 
 #[derive(Debug, Serialize)]

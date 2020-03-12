@@ -7,6 +7,7 @@ use chrono::{Duration, NaiveDateTime, Utc};
 use diesel::backend::Backend;
 use diesel::debug_query;
 use diesel::prelude::*;
+use diesel::result::{DatabaseErrorKind as DieselErrorKind, Error as DieselError};
 use diesel::sql_types::Integer;
 use diesel::{deserialize as diesel_deserialize, serialize as diesel_serialize};
 use serde_derive::{Deserialize as DeriveDeserialize, Serialize as DeriveSerialize};
@@ -15,11 +16,22 @@ use std::fmt::{Display, Formatter};
 use std::io;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind};
-use validator::Validate;
 use strum_macros::EnumIter;
+use url::Url;
+use validator::{Validate, ValidationError};
 
 #[repr(i32)]
-#[derive(Debug, PartialEq, AsExpression, Clone, Copy, Serialize_repr, Deserialize_repr, FromSqlRow, EnumIter)]
+#[derive(
+    Debug,
+    PartialEq,
+    AsExpression,
+    Clone,
+    Copy,
+    Serialize_repr,
+    Deserialize_repr,
+    FromSqlRow,
+    EnumIter,
+)]
 #[sql_type = "Integer"]
 pub enum DomainState {
     Enabled = 1,
@@ -29,7 +41,12 @@ pub enum DomainState {
 
 impl Display for DomainState {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "{}", *self as i32)
+        let res = match self {
+            DomainState::Enabled => "Enabled".to_string(),
+            DomainState::Disabled => "Disabled".to_string(),
+            _ => "Removed".to_string(),
+        };
+        write!(f, "{}", res)
     }
 }
 
@@ -80,12 +97,29 @@ pub struct Domain {
     pub author: i32,
 }
 
-#[derive(Debug, Insertable, DeriveSerialize, DeriveDeserialize, Validate)]
+fn validate_urls(url: &str) -> Result<(), ValidationError> {
+    let enabled_schemes = ["http", "https"];
+
+    let parsed_result = Url::parse(url);
+
+    match parsed_result {
+        Ok(url) => {
+            if enabled_schemes.contains(&url.scheme()) {
+                Ok(())
+            } else {
+                Err(ValidationError::new("invalid_url"))
+            }
+        }
+        _ => Err(ValidationError::new("invalid_url")),
+    }
+}
+
+#[derive(Debug, Insertable, DeriveSerialize, DeriveDeserialize, Validate, Clone)]
 #[table_name = "domain"]
 pub struct DomainInsertUpdate {
     pub id: Option<i32>,
     pub name: String,
-    #[validate(url)]
+    #[validate(url, custom = "validate_urls")]
     pub url: String,
     pub state: DomainState,
     pub author: Option<i32>,
@@ -118,7 +152,7 @@ impl Handler<DomainInsertUpdate> for DbExecutor {
 
         match inserted {
             Ok(value) => {
-                if value.len() > 0 {
+                if !value.is_empty() {
                     Ok(Domain {
                         id: *value.get(0).unwrap_or(&0),
                         name: domain_msg.name,
@@ -136,7 +170,28 @@ impl Handler<DomainInsertUpdate> for DbExecutor {
                     ))
                 }
             }
-            Err(err) => Err(io::Error::new(io::ErrorKind::Other, err)),
+            Err(err) => match &err {
+                DieselError::DatabaseError(kind, info) => match kind {
+                    DieselErrorKind::UniqueViolation => Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        "Object with same url is already exists",
+                    )),
+                    _ => {
+                        error!("Domain insert/update error: {}", err);
+                        Err(io::Error::new(
+                            io::ErrorKind::Other,
+                            "Error during update object. Please retry..",
+                        ))
+                    }
+                },
+                _ => {
+                    error!("Domain insert/update error: {}", err);
+                    Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        "Error during update object. Please retry..",
+                    ))
+                }
+            },
         }
     }
 }
@@ -190,7 +245,10 @@ impl Handler<DomainList> for DbExecutor {
             Ok(domains_db) => Ok(domains_db),
             Err(err) => {
                 error!("Error in db search {}", &err);
-                Err(io::Error::new(io::ErrorKind::Other, err))
+                Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Error search object. Please retry..",
+                ))
             }
         }
     }

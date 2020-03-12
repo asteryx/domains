@@ -5,7 +5,7 @@ use crate::utils::json_response;
 use crate::AppState;
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde_derive::{Deserialize, Serialize};
-use validator::{Validate, ValidationErrors};
+use validator::Validate;
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct ListQuery {
@@ -38,6 +38,8 @@ fn validate_domain(input_domain: &web::Json<DomainInsertUpdate>) -> Result<(), E
     match &input_domain.validate() {
         Ok(_) => Ok(()),
         Err(err) => {
+            // dbg!(err.errors());
+
             let error_exp = err
                 .errors()
                 .keys()
@@ -71,8 +73,6 @@ pub async fn domain_create(
         })
         .await?;
 
-    dbg!(&res);
-
     Ok(json_response(res?))
 }
 
@@ -98,10 +98,15 @@ pub async fn domain_update(
 }
 
 pub async fn domain_status(_: web::Data<AppState>) -> Result<HttpResponse, ErrorResponse> {
-    use std::collections::HashMap;
-    use strum::IntoEnumIterator;
     use std::iter::FromIterator;
+    use strum::IntoEnumIterator;
 
-    let res: HashMap<_, _> = FromIterator::from_iter(DomainState::iter().map(|ds| (ds as i32, ds.to_string())));
-    Ok(json_response(res))
+    let list_objects: Vec<_> = Vec::from_iter(DomainState::iter().map(|ds| {
+        serde_json::json!({
+        "id": ds as i32,
+        "name": ds.to_string()
+        })
+    }));
+
+    Ok(json_response(list_objects))
 }

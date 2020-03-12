@@ -42,6 +42,7 @@ validator = "0.10"
 validator_derive = "0.10"
 strum = "0.18"
 strum_macros = "0.18.0"
+url = "2.1.1"
 
 [profile.dev]
 debug = true  # Добавляет флаг `-g` для компилятора;
