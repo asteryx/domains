@@ -18,6 +18,8 @@ extern crate validator;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
+#[macro_use]
+extern crate lazy_static;
 
 use crate::services::ping::Ping;
 use actix::prelude::*;
@@ -38,7 +40,7 @@ mod share;
 mod user_api;
 mod utils;
 
-pub use utils::{config, errors, guards, hashers, jwt, router, state, state::AppState};
+pub use utils::{config::CONFIG, errors, guards, hashers, jwt, router, state, state::AppState};
 
 #[actix_rt::main]
 async fn main() -> io::Result<()> {
@@ -51,23 +53,21 @@ async fn main() -> io::Result<()> {
     let app_state: AppState = AppState::new(db.clone(), ping.clone());
     let jobs_state: AppState = AppState::new(db.clone(), ping.clone());
 
-    let cloned_config = app_state.config.clone();
-
     let state: web::Data<AppState> = web::Data::new(app_state);
     let arc_state = Arc::new(web::Data::new(jobs_state));
 
     std::env::set_var(
-        cloned_config.log_level_env_name(),
-        format!("{}", cloned_config.log_level()),
+        CONFIG.log_level_env_name(),
+        format!("{}", CONFIG.log_level()),
     );
 
-    let mut builder = Builder::from_env(cloned_config.log_level_env_name());
+    let mut builder = Builder::from_env(CONFIG.log_level_env_name());
     builder.init();
 
-    info!("Log level set is {}", cloned_config.log_level());
+    info!("Log level set is {}", CONFIG.log_level());
 
-    let server_ip = cloned_config.server_addr();
-    let port = cloned_config.server_port();
+    let server_ip = CONFIG.server_addr();
+    let port = CONFIG.server_port();
 
     info!("CPU's num {}", num_cpus::get());
     thread::spawn(move || jobs::ping_fn(arc_state));

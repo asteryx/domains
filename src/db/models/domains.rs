@@ -2,8 +2,9 @@ use crate::db::models::users::User;
 use crate::db::schema::domain;
 use crate::db::schema::domain_status;
 use crate::db::DbExecutor;
+use crate::CONFIG;
 use actix::{Handler, Message};
-use chrono::{Duration, NaiveDateTime, Utc};
+use chrono::{Duration, NaiveDateTime, Utc, DateTime};
 use diesel::backend::Backend;
 use diesel::debug_query;
 use diesel::prelude::*;
@@ -272,7 +273,7 @@ pub struct DomainStatus {
 
 #[derive(Debug, DeriveSerialize, DeriveDeserialize, Validate)]
 pub struct DomainStatusShort {
-    pub date: NaiveDateTime,
+    pub date: DateTime<Utc>,
     pub loading_time: i32,
     pub status_code: i32,
     pub headers: String,
@@ -310,10 +311,10 @@ impl Handler<InsertDomainStatusRequest> for DbExecutor {
             .is_ok();
 
         if inserted {
-            if self.config.domain_statuses_rotation() {
+            if CONFIG.domain_statuses_rotation() {
                 //calculate date of greater self.config.rotate_days
                 let dt_rotate =
-                    Utc::now() - Duration::days(self.config.domain_statuses_rotate_days() as i64);
+                    Utc::now() - Duration::days(CONFIG.domain_statuses_rotate_days() as i64);
 
                 let subquery = domain_status
                     .filter(

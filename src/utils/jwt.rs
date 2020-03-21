@@ -1,6 +1,6 @@
-use crate::config::Config;
 use crate::db::models::users::User;
 use crate::errors::ErrorResponse;
+use crate::CONFIG;
 use actix_web::dev::Payload;
 use actix_web::HttpRequest;
 use chrono::{Duration, NaiveDateTime, Utc};
@@ -85,19 +85,12 @@ impl actix_web::FromRequest for Claims {
             }),
         }
     }
-
-    // Convert request to a Self
-    //
-    // This method uses `Payload::None` as payload stream.
-    //    fn extract(req: &HttpRequest) -> Self::Future {
-    //        Self::from_request(req, &mut Payload::None)
-    //    }
 }
 
-pub fn encode_token(config: &Config, user: &User) -> Result<String, JWTError> {
+pub fn encode_token(user: &User) -> Result<String, JWTError> {
     let now = Utc::now();
-    let expiration_hours = config.jwt_expiration_hours();
-    let secret = config.jwt_secret_key();
+    let expiration_hours = CONFIG.jwt_expiration_hours();
+    let secret = CONFIG.jwt_secret_key();
     let my_claims = Claims {
         user_id: 1,
         email: user.email.clone(),
@@ -122,8 +115,8 @@ pub fn encode_token(config: &Config, user: &User) -> Result<String, JWTError> {
     Ok(token)
 }
 
-pub fn decode_token(config: &Config, token: &str) -> Result<TokenData<Claims>, JWTError> {
-    let secret = config.jwt_secret_key();
+pub fn decode_token(token: &str) -> Result<TokenData<Claims>, JWTError> {
+    let secret = CONFIG.jwt_secret_key();
 
     let token_data = decode::<Claims>(
         token,

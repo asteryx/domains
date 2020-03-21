@@ -1,7 +1,7 @@
 pub mod models;
 pub mod schema;
 
-use crate::config::Config;
+use crate::CONFIG;
 use actix::{Actor, SyncContext};
 use diesel::prelude::PgConnection;
 use diesel::r2d2;
@@ -13,7 +13,6 @@ pub enum DbError {
 
 pub struct DbExecutor {
     pool: Pool<ConnectionManager<PgConnection>>,
-    config: Config,
 }
 
 unsafe impl Send for DbExecutor {}
@@ -24,15 +23,14 @@ impl Actor for DbExecutor {
 
 impl Default for DbExecutor {
     fn default() -> Self {
-        let config = Config::from_file();
-        let pool = init_pool(&config);
-        DbExecutor::new(config, pool)
+        let pool = init_pool();
+        DbExecutor::new(pool)
     }
 }
 
 impl DbExecutor {
-    fn new(config: Config, pool: Pool<ConnectionManager<PgConnection>>) -> DbExecutor {
-        DbExecutor { config, pool }
+    fn new(pool: Pool<ConnectionManager<PgConnection>>) -> DbExecutor {
+        DbExecutor { pool }
     }
     pub fn get_connection(
         &self,
@@ -44,9 +42,9 @@ impl DbExecutor {
     }
 }
 
-pub fn init_pool(config: &Config) -> Pool<ConnectionManager<PgConnection>> {
+pub fn init_pool() -> Pool<ConnectionManager<PgConnection>> {
     let manager: ConnectionManager<PgConnection> =
-        ConnectionManager::<PgConnection>::new(config.database_url());
+        ConnectionManager::<PgConnection>::new(CONFIG.database_url());
     Pool::builder()
         .max_size(10)
         .build(manager)

@@ -1,13 +1,10 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use crate::config::Config;
 use crate::errors::ErrorResponse;
 use crate::jwt::{decode_token, Claims, JWTError};
-use crate::state::AppState;
 use actix_service::{Service, Transform};
 use actix_web::http::HeaderMap;
-use actix_web::web::Data;
 use actix_web::{dev::ServiceRequest, dev::ServiceResponse, Error, HttpMessage};
 use futures::future::{ok, Ready};
 use futures::Future;
@@ -67,32 +64,17 @@ impl<S> AuthenticationMiddleware<S> {
         }
     }
 
-    fn parse_claims(
-        &self,
-        config: &Config,
-        _name: &str,
-        raw_token: &str,
-    ) -> Result<Claims, JWTError> {
-        let token_data = decode_token(config, raw_token);
+    fn parse_claims(&self, _name: &str, raw_token: &str) -> Result<Claims, JWTError> {
+        let token_data = decode_token(raw_token);
         match token_data {
             Ok(tdata) => Ok(tdata.claims),
             Err(err) => Err(err),
         }
     }
 
-    fn get_claims(
-        &self,
-        headers: &HeaderMap,
-        option_state: &Option<Data<AppState>>,
-    ) -> Result<Option<Claims>, JWTError> {
+    fn get_claims(&self, headers: &HeaderMap) -> Result<Option<Claims>, JWTError> {
         if let Some((name, token)) = self.get_header_parts(headers)? {
-            let conf_from_file = Config::from_file();
-
-            let config = match option_state {
-                Some(app_state) => &app_state.config,
-                None => &conf_from_file,
-            };
-            match self.parse_claims(&config, name, token) {
+            match self.parse_claims(name, token) {
                 Ok(claims) => Ok(Some(claims)),
                 Err(err) => Err(err),
             }
@@ -119,9 +101,8 @@ where
 
     fn call(&mut self, req: ServiceRequest) -> Self::Future {
         let headers = req.headers();
-        let app_state = &req.app_data::<AppState>();
 
-        let clms = self.get_claims(headers, app_state);
+        let clms = self.get_claims(headers);
         let mut result_error: Option<JWTError> = None;
 
         match clms {

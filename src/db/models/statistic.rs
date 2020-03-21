@@ -1,10 +1,10 @@
-use crate::config::Config;
-use crate::db::models::domains::{Domain, DomainState, DomainStatusShort};
+use crate::db::models::domains::{DomainState, DomainStatusShort};
 use crate::db::schema::domain;
 use crate::db::schema::domain_status;
 use crate::db::DbExecutor;
+use crate::CONFIG;
 use actix::{Handler, Message};
-use chrono::{DateTime, Duration, Local, NaiveDateTime, Utc};
+use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use diesel::debug_query;
 use diesel::prelude::*;
 use serde_derive::{Deserialize as SerdeDeserialize, Serialize as SerdeSerialize};
@@ -20,10 +20,7 @@ fn validate_domain_list(string_list: &str) -> Result<(), ValidationError> {
     let deserialized: Result<Vec<i32>, _> = deserialize_domain_list(string_list);
     match deserialized {
         Ok(_) => Ok(()),
-        Err(err) => {
-            // dbg!(err);
-            Err(ValidationError::new("invalid_domain_list"))
-        }
+        Err(_err) => Err(ValidationError::new("invalid_domain_list")),
     }
 }
 
@@ -50,8 +47,6 @@ impl Handler<Statistic> for DbExecutor {
     type Result = io::Result<Option<Vec<DomainGroup>>>;
 
     fn handle(&mut self, domain_msg: Statistic, _ctx: &mut Self::Context) -> Self::Result {
-        let config = Config::from_file();
-
         let mut query = domain::table
             .inner_join(domain_status::table.on(domain::id.eq(domain_status::domain_id)))
             .into_boxed();
@@ -95,18 +90,17 @@ impl Handler<Statistic> for DbExecutor {
 
         match query_result {
             Ok(domains_db) => {
-                dbg!(&domains_db);
                 let mut result: Vec<DomainGroup> = Vec::new();
                 let mut lastid = -1;
                 for (id, name, date, loading_time, status_code, headers, file) in
                     domains_db.into_iter()
                 {
                     let current_status = DomainStatusShort {
-                        date,
+                        date: DateTime::from_utc(date, Utc),
                         loading_time,
                         status_code,
                         headers,
-                        filename: file,
+                        filename: CONFIG.media(file),
                     };
 
                     if id != lastid {
@@ -122,7 +116,7 @@ impl Handler<Statistic> for DbExecutor {
                         result[length - 1].statuses.push(current_status);
                     }
                 }
-                dbg!(&result);
+
                 Ok(Some(result))
             }
             Err(err) => {

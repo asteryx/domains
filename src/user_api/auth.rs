@@ -36,7 +36,7 @@ pub async fn login(
     if let Ok(user) = res {
         if user.check_password(&login.password) {
             return Ok(json_response(LoginResult {
-                token: encode_token(&data.config, &user)?,
+                token: encode_token(&user)?,
                 email: user.email,
                 name: user.name,
             }));

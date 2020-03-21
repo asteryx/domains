@@ -1,6 +1,7 @@
 use crate::db::models::domains::{DomainList, DomainState};
 use crate::services::ping::PingRequest;
 use crate::AppState;
+use crate::CONFIG;
 use actix_web::web;
 use futures::executor::block_on;
 use std::sync::Arc;
@@ -30,6 +31,6 @@ pub fn ping_fn(state: Arc<web::Data<AppState>>) {
                 });
             }
         };
-        sleep(Duration::from_secs(state.config.ping_interval()));
+        sleep(Duration::from_secs(CONFIG.ping_interval()));
     }
 }

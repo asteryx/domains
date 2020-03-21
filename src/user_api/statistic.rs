@@ -1,10 +1,8 @@
-use crate::db::models::domains::{DomainList, DomainState};
 use crate::db::models::statistic::Statistic;
 use crate::errors::ErrorResponse;
 use crate::utils::json_response;
 use crate::AppState;
-use actix_web::{web, HttpRequest, HttpResponse};
-use chrono::{DateTime, Local};
+use actix_web::{web, HttpResponse};
 use validator::Validate;
 
 pub async fn domain_statistic(

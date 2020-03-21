@@ -4,7 +4,9 @@ use std::io::{Read, Write};
 use toml;
 
 const ENV_PREFIX: &str = "DOMAINS";
-
+lazy_static! {
+    pub static ref CONFIG: Config = Config::from_file();
+}
 fn get_env_name(local_env: &str) -> String {
     format!("{}_{}", ENV_PREFIX, local_env).to_ascii_uppercase()
 }
@@ -68,6 +70,13 @@ impl Config {
     }
     pub fn jwt_secret_key(&self) -> &String {
         &self.jwt_secret_key
+    }
+    pub fn media(&self, filename: Option<String>) -> Option<String> {
+        if let Some(file) = filename {
+            Some(format!("{}{}", self.media_root(), file))
+        } else {
+            None
+        }
     }
 }
 

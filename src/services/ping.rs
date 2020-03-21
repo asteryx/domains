@@ -1,6 +1,7 @@
 use crate::AppState;
 extern crate signal_hook;
 use crate::db::models::domains::{Domain, InsertDomainStatusRequest};
+use crate::CONFIG;
 use actix::prelude::*;
 use actix_web::web;
 use chrono::Utc;
@@ -128,7 +129,7 @@ impl Handler<PingRequest> for Ping {
     type Result = Result<bool, IoError>;
 
     fn handle(&mut self, msg: PingRequest, _ctx: &mut SyncContext<Self>) -> Self::Result {
-        let media_root = msg.state.config.media_root();
+        let media_root = CONFIG.media_root();
 
         let folders = format!("{}{}", &media_root, &msg.domain.id);
         fs::create_dir_all(&folders).unwrap();
@@ -140,7 +141,7 @@ impl Handler<PingRequest> for Ping {
             "{}/{}.{}",
             &msg.domain.id,
             &timestamp,
-            &msg.state.config.image_format()
+            &CONFIG.image_format()
         );
 
         let result = self.client.head(&msg.domain.url).send().unwrap();
