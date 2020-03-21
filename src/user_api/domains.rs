@@ -34,33 +34,12 @@ pub async fn domain_list(
     Ok(json_response(domains?))
 }
 
-fn validate_domain(input_domain: &web::Json<DomainInsertUpdate>) -> Result<(), ErrorResponse> {
-    match &input_domain.validate() {
-        Ok(_) => Ok(()),
-        Err(err) => {
-            // dbg!(err.errors());
-
-            let error_exp = err
-                .errors()
-                .keys()
-                .map(|r| r.to_string())
-                .collect::<Vec<String>>()
-                .join(", ");
-
-            Err(ErrorResponse {
-                msg: format!("Validation errors in fields: {}", error_exp),
-                status: 400,
-            })
-        }
-    }
-}
-
 pub async fn domain_create(
     input_domain: web::Json<DomainInsertUpdate>,
     claims: Claims,
     data: web::Data<AppState>,
 ) -> Result<HttpResponse, ErrorResponse> {
-    validate_domain(&input_domain)?;
+    &input_domain.validate()?;
 
     let res = data
         .db
@@ -80,7 +59,7 @@ pub async fn domain_update(
     input_domain: web::Json<DomainInsertUpdate>,
     data: web::Data<AppState>,
 ) -> Result<HttpResponse, ErrorResponse> {
-    validate_domain(&input_domain)?;
+    &input_domain.validate()?;
 
     dbg!(&input_domain);
 
@@ -97,7 +76,7 @@ pub async fn domain_update(
     ))
 }
 
-pub async fn domain_status(_: web::Data<AppState>) -> Result<HttpResponse, ErrorResponse> {
+pub async fn domain_states(_: web::Data<AppState>) -> Result<HttpResponse, ErrorResponse> {
     use std::iter::FromIterator;
     use strum::IntoEnumIterator;
 

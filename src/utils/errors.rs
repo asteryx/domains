@@ -67,6 +67,22 @@ impl From<QueryPayloadError> for ErrorResponse {
     }
 }
 
+impl From<validator::ValidationErrors> for ErrorResponse {
+    fn from(outer: validator::ValidationErrors) -> Self {
+        let error_exp = outer
+            .errors()
+            .keys()
+            .map(|&r| r.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        ErrorResponse {
+            msg: format!("Validation errors in fields: {}", error_exp),
+            status: 400,
+        }
+    }
+}
+
 pub fn json_error_handler(err: JsonPayloadError, _req: &HttpRequest) -> actix_web::Error {
     let error_message: String = match err {
         JsonPayloadError::Payload(payload_error) => format!("{}", payload_error),

@@ -171,7 +171,7 @@ impl Handler<DomainInsertUpdate> for DbExecutor {
                 }
             }
             Err(err) => match &err {
-                DieselError::DatabaseError(kind, info) => match kind {
+                DieselError::DatabaseError(kind, _info) => match kind {
                     DieselErrorKind::UniqueViolation => Err(io::Error::new(
                         io::ErrorKind::Other,
                         "Object with same url is already exists",
@@ -267,7 +267,16 @@ pub struct DomainStatus {
     pub headers: String,
     pub filename: Option<String>,
     #[column_name = "domain_id"]
-    pub domain: i32,
+    pub domain: Domain,
+}
+
+#[derive(Debug, DeriveSerialize, DeriveDeserialize, Validate)]
+pub struct DomainStatusShort {
+    pub date: NaiveDateTime,
+    pub loading_time: i32,
+    pub status_code: i32,
+    pub headers: String,
+    pub filename: Option<String>,
 }
 
 #[derive(Insertable, DeriveSerialize, DeriveDeserialize, Clone, Debug)]
