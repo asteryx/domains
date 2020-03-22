@@ -23,6 +23,9 @@ case ${1} in
   "stop")
   docker-compose --file docker-compose.yml stop
   ;;
+  "restart")
+  docker-compose --file docker-compose.yml stop && docker-compose --file docker-compose.yml up -d
+  ;;
   "down")
   docker-compose --file docker-compose.yml down
   ;;
