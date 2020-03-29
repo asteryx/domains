@@ -6,10 +6,10 @@ import {ActivatedRoute, Params, Router} from '@angular/router';
 import {AbstractComponent} from '../abstract/component.abstract';
 
 @Component({
-  selector: 'app-dashboard',
-  templateUrl: 'login.component.html'
+  selector: 'logout',
+  template: '<div></div>'
 })
-export class LoginComponent extends AbstractComponent{
+export class LogoutComponent extends AbstractComponent{
   constructor(public toastr: ToastrService,
               public router: Router,
               public activatedRoute: ActivatedRoute,
@@ -20,20 +20,9 @@ export class LoginComponent extends AbstractComponent{
   loginForm = new LoginForm();
   isLoading = false;
 
-  onSubmit() {
-    this.isLoading = !this.isLoading;
-
-    this.authService.login(this.loginForm).subscribe(
-      res => {
-        this.isLoading = !this.isLoading;
-        this.user = new User().login(res);
-        console.log(res);
-        this.activatedRoute.queryParams.subscribe((params: Params) => {
-          const to = params.returnUrl || 'dashboard';
-          this.router.navigate([to]);
-        });
-      },
-      error => this.handleServerError(error)
-    );
+  ngOnInit() {
+    this.user.logout();
+    this.router.navigate(['/login']);
   }
+
 }

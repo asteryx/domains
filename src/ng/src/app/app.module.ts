@@ -49,6 +49,7 @@ import {AuthenticationService} from './services/authentication.service';
 import {Token, User} from './app.models';
 import { HeadersInterceptor, ResponseInterceptor } from './app.interceptors';
 import {AuthenticatedGuard} from './app.guards';
+import {LogoutComponent} from './views/logout/logout.component';
 
 @NgModule({
   imports: [
@@ -84,6 +85,7 @@ import {AuthenticatedGuard} from './app.guards';
     // P404Component,
     // P500Component,
     LoginComponent,
+    LogoutComponent,
     // RegisterComponent
   ],
   providers: [
