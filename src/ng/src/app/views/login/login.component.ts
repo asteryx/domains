@@ -16,7 +16,6 @@ export class LoginComponent extends AbstractComponent{
               private authService: AuthenticationService) {
     super(toastr, router, activatedRoute);
   }
-  user: User;
   loginForm = new LoginForm();
   isLoading = false;
 
@@ -26,7 +25,7 @@ export class LoginComponent extends AbstractComponent{
     this.authService.login(this.loginForm).subscribe(
       res => {
         this.isLoading = !this.isLoading;
-        this.user = new User().login(res);
+        this.user.login(res);
         console.log(res);
         this.activatedRoute.queryParams.subscribe((params: Params) => {
           const to = params.returnUrl || 'dashboard';

@@ -3,9 +3,9 @@ import { NgForm } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import {ActivatedRoute, Params, Router} from '@angular/router';
 
-
 export class AbstractComponent {
   isLoading: boolean = false;
+  user: User = new User();
 
   constructor(public toastr: ToastrService,
               public router: Router,
