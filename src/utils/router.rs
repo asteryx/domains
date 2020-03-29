@@ -47,6 +47,7 @@ pub fn configuration(cfg: &mut web::ServiceConfig) {
     cfg.service(fs::Files::new("/static", "static/"))
         .service(fs::Files::new("/media", "media/"))
         .service(fs::Files::new("/ng", "src/ng/dist/").show_files_listing())
+        .service(fs::Files::new("/assets", "src/ng/dist/assets/").show_files_listing())
         .service(user_api_scope("api_user"))
         .service(web::resource("/").route(web::get().to(index::index)));
 }

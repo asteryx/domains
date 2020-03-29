@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import { User, LoginForm } from '../../app.models';
 import {AuthenticationService} from '../../services/authentication.service';
 import { ToastrService } from 'ngx-toastr';
@@ -9,14 +9,14 @@ import {AbstractComponent} from '../abstract/component.abstract';
   selector: 'logout',
   template: '<div></div>'
 })
-export class LogoutComponent extends AbstractComponent{
+export class LogoutComponent extends AbstractComponent implements OnInit{
   constructor(public toastr: ToastrService,
               public router: Router,
               public activatedRoute: ActivatedRoute,
               private authService: AuthenticationService) {
     super(toastr, router, activatedRoute);
   }
-  user: User;
+  user: User = new User();
   loginForm = new LoginForm();
   isLoading = false;
 

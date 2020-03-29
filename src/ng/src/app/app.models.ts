@@ -56,7 +56,7 @@ export class User {
 
   logout() {
     this.token.remove();
-    localStorage.removeItem('name');
+    localStorage.removeItem('username');
     localStorage.removeItem('email');
   }
 }

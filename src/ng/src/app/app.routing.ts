@@ -42,13 +42,6 @@ export const routes: Routes = [
           title: 'Login Page'
         }
       },
-      {
-        path: 'logout',
-        component: LogoutComponent,
-        data: {
-          title: 'Logout Page'
-        }
-      },
     ]
   },
   {
@@ -74,7 +67,7 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadChildren: './views/dashboard/dashboard.module#DashboardModule'
-      }
+      },
       // {
       //   path: 'editors',
       //   loadChildren: './views/editors/editors.module#EditorsModule'
@@ -115,6 +108,13 @@ export const routes: Routes = [
       //   path: 'widgets',
       //   loadChildren: './views/widgets/widgets.module#WidgetsModule'
       // }
+      {
+        path: 'logout',
+        component: LogoutComponent,
+        data: {
+          title: 'Logout Page'
+        }
+      },
     ]
   }
 ];
