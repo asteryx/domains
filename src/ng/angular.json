@@ -133,6 +133,10 @@
           }
         }
       }
-    }},
-  "defaultProject": "domains-app"
+    }
+  },
+  "defaultProject": "domains-app",
+  "cli": {
+    "analytics": "b6db97ee-24d0-44a4-8023-ab0f76cc6c01"
+  }
 }

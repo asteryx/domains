@@ -15,3 +15,10 @@
 // Spinkit
 $spinkit-spinner-color: $body-color;
 @import '~spinkit/scss/spinkit.scss';
+
+//Ladda
+@import '~ladda/css/ladda';
+
+// regular style toast
+@import '~ngx-toastr/toastr';
+

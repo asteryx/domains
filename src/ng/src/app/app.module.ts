@@ -1,5 +1,7 @@
+import { FormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { HTTP_INTERCEPTORS, HttpClient, HttpHandler, HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { LocationStrategy, HashLocationStrategy } from '@angular/common';
 
@@ -40,9 +42,18 @@ import { AppRoutingModule } from './app.routing';
 import { BsDropdownModule } from 'ngx-bootstrap/dropdown';
 import { TabsModule } from 'ngx-bootstrap/tabs';
 import { ChartsModule } from 'ng2-charts/ng2-charts';
+import { LaddaModule } from 'angular2-ladda';
+import { ToastrModule } from 'ngx-toastr';
+
+import {AuthenticationService} from './services/authentication.service';
+import {Token, User} from './app.models';
+import { HeadersInterceptor, ResponseInterceptor } from './app.interceptors';
+import {AuthenticatedGuard} from './app.guards';
 
 @NgModule({
   imports: [
+    FormsModule,
+    HttpClientModule,
     BrowserModule,
     BrowserAnimationsModule,
     AppRoutingModule,
@@ -54,7 +65,18 @@ import { ChartsModule } from 'ng2-charts/ng2-charts';
     PerfectScrollbarModule,
     BsDropdownModule.forRoot(),
     TabsModule.forRoot(),
-    ChartsModule
+    ChartsModule,
+    LaddaModule.forRoot({
+      // style: 'contract',
+      spinnerSize: 40,
+      spinnerColor: 'red',
+      spinnerLines: 12
+    }),
+    ToastrModule.forRoot({
+      timeOut: 3000,
+      positionClass: 'toast-top-right',
+      preventDuplicates: true,
+    }),
   ],
   declarations: [
     AppComponent,
@@ -64,10 +86,27 @@ import { ChartsModule } from 'ng2-charts/ng2-charts';
     LoginComponent,
     // RegisterComponent
   ],
-  providers: [{
+  providers: [
+    {
     provide: LocationStrategy,
     useClass: HashLocationStrategy
-  }],
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: HeadersInterceptor,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: ResponseInterceptor,
+      multi: true
+    },
+    HttpClient,
+    AuthenticationService,
+    AuthenticatedGuard,
+    User,
+    Token,
+  ],
   bootstrap: [ AppComponent ]
 })
 export class AppModule { }

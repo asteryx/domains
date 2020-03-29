@@ -9,7 +9,7 @@ pub fn user_api_scope(path: &str) -> Scope {
     web::scope(path)
         .service(
             web::scope("auth").service(
-                web::resource("/login")
+                web::resource("login/")
                     .default_service(web::resource("").route(web::to(HttpResponse::Forbidden)))
                     .route(
                         web::post()
