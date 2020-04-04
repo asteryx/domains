@@ -5,7 +5,7 @@ export const navItems = [
     icon: 'icon-speedometer',
     badge: {
       variant: 'info',
-      text: 'NEW'
+      text: ''
     }
   }
   // {
