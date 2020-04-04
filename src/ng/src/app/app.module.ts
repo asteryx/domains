@@ -44,6 +44,7 @@ import { TabsModule } from 'ngx-bootstrap/tabs';
 import { ChartsModule } from 'ng2-charts/ng2-charts';
 import { LaddaModule } from 'angular2-ladda';
 import { ToastrModule } from 'ngx-toastr';
+import { BsDatepickerModule } from 'ngx-bootstrap/datepicker';
 
 import {AuthenticationService} from './services/authentication.service';
 import {Token, User} from './app.models';
@@ -65,6 +66,7 @@ import {LogoutComponent} from './views/logout/logout.component';
     AppSidebarModule,
     PerfectScrollbarModule,
     BsDropdownModule.forRoot(),
+    BsDatepickerModule.forRoot(),
     TabsModule.forRoot(),
     ChartsModule,
     LaddaModule.forRoot({

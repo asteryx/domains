@@ -1,18 +1,36 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
+import { FormControl, FormGroup } from '@angular/forms';
 import { getStyle, hexToRgba } from '@coreui/coreui-pro/dist/js/coreui-utilities';
 import { CustomTooltips } from '@coreui/coreui-plugin-chartjs-custom-tooltips';
+import {ToastrService} from 'ngx-toastr';
+import {AbstractComponent} from '../abstract/component.abstract';
 
 @Component({
   templateUrl: 'dashboard.component.html'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent extends AbstractComponent implements OnInit {
 
+  constructor(public toastr: ToastrService,
+              public router: Router,
+              public activatedRoute: ActivatedRoute) {
+    super(toastr, router, activatedRoute);
+  }
+
+  currentDate = new Date();
+
+  currentForm = new FormGroup({
+    dateRange: new FormControl([
+      new Date(),
+      new Date(this.currentDate.setDate(this.currentDate.getDate() + 7))
+    ])
+  });
   radioModel:string = 'Day';
+  bsRangeValue: any = [new Date(2017, 7, 4), new Date(2017, 7, 20)];
 
   // mainChart
 
-  public mainChartElements = 27;
+  public mainChartElements = 1440;
   public mainChartData1: Array<number> = [];
   public mainChartData2: Array<number> = [];
   public mainChartData3: Array<number> = [];
@@ -179,11 +197,14 @@ export class DashboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.mainChartLabels = [];
     // generate random values for mainChart
     for (let i = 0; i <= this.mainChartElements; i++) {
-      this.mainChartData1.push(this.random(50, 200));
+      this.mainChartData1.push(this.random(140, 200));
       this.mainChartData2.push(this.random(80, 100));
       this.mainChartData3.push(65);
+      this.mainChartLabels.push(`{i}`);
     }
+    console.log(this.mainChartData1, this.mainChartData1.length);
   }
 }
