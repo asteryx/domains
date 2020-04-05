@@ -1,6 +1,5 @@
 import { Injectable, ViewContainerRef } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { StatisticForm } from '../app.models';
+import {HttpClient, HttpParams} from '@angular/common/http';
 import { map } from 'rxjs/operators';
 
 @Injectable()
@@ -13,11 +12,25 @@ export class StatisticService {
     return this.http.get(url, data);
   }
 
-  getStatistic(statForm: StatisticForm) {
-    const data = {
-      dt_start: 'eeeeeeeeee',
-      dt_end: 'qqqqqqqqqqq'
-    };
-    return this.http.get('api_user/statistic/', {params: data});
+  getStatistic(data: {
+    dtStart?: Date,
+    dtEnd?: Date,
+    domainList?: number[]
+  } = {}) {
+    let params: HttpParams = new HttpParams();
+
+    if (data.dtStart !== null && data.dtStart !== undefined){
+      params = params.set('dt_start', data.dtStart.toJSON());
+    }
+
+    if (data.dtEnd !== null && data.dtEnd !== undefined){
+      params = params.set('dt_end', data.dtEnd.toJSON());
+    }
+
+    if (data.domainList !== null && data.domainList !== undefined){
+      params = params.set('domain_list', `[${data.domainList}]`);
+    }
+
+    return this.http.get('api_user/statistic/', {params});
   }
 }

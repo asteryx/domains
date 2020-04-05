@@ -5,41 +5,66 @@
       <div class="row">
         <div class="col-sm-5">
           <h4 class="card-title mb-0">Traffic</h4>
-          <div class="small text-muted">periodStart - periodEnd</div>
+<!--          <div class="small text-muted">periodStart - periodEnd</div>-->
         </div><!--/.col-->
         <div class="col-sm-7 d-none d-md-block">
           <div class="btn-group btn-group-toggle float-right mr-3" data-toggle="buttons">
-            <label class="btn btn-outline-secondary" [(ngModel)]="radioModel" btnRadio="Day" id="option1">Day</label>
-            <label class="btn btn-outline-secondary" [(ngModel)]="radioModel" btnRadio="Month" id="option2">Month</label>
-            <label class="btn btn-outline-secondary" [(ngModel)]="radioModel" btnRadio="Year" id="option3">Year</label>
+            <label class="btn btn-outline-secondary"
+                   [(ngModel)]="divider"
+                   btnRadio="min"
+                   (ngModelChange)="radioChange($event)"
+                   id="min">
+              Minute
+            </label>
+            <label class="btn btn-outline-secondary"
+                   [(ngModel)]="divider"
+                   btnRadio="hour"
+                   (ngModelChange)="radioChange($event)"
+                   id="hour">
+              Hour
+            </label>
+            <label class="btn btn-outline-secondary"
+                   [(ngModel)]="divider"
+                   btnRadio="day"
+                   (ngModelChange)="radioChange($event)"
+                   id="day">
+              Day
+            </label>
           </div>
         </div><!--/.col-->
       </div><!--/.row-->
+      <form [formGroup]="currentForm">
       <div class="row">
-        <div class="col-sm-12">
-          <div class="float-right">
-            <form [formGroup]="currentForm">
-              <input type="text"
-                      class="form-control"
-                      formControlName="dateRange"
-                      #daterangepicker="bsDaterangepicker"
-                      bsDaterangepicker
-                      [bsConfig]="{ rangeInputFormat : 'MMMM Do YYYY, h:mm:ss a', dateInputFormat: 'MMMM Do YYYY, h:mm:ss a', showWeekNumbers: false }">
-
-<!--              <input class="form-control" #drp="bsDaterangepicker" bsDaterangepicker placement="left" [(ngModel)]="bsRangeValue">-->
-            </form>
-          </div>
+        <div class="col-sm-3 col-lg-2 col-md-2">
+            <input type="text"
+                   class="form-control"
+                   formControlName="dtStart"
+                   #dtStart="bsDatepicker"
+                   bsDatepicker
+                   (bsValueChange) = "dateValueChange($event)"
+                   [bsConfig]="{ dateInputFormat: 'DD.MM.YYYY HH:mm:ss' }">
+        </div>
+        <div class="col-sm-3 col-lg-2 col-md-2">
+            <input type="text"
+                   class="form-control"
+                   formControlName="dtEnd"
+                   #dtEnd="bsDatepicker"
+                   bsDatepicker
+                   (bsValueChange) = "dateValueChange($event)"
+                   [bsConfig]="{ dateInputFormat: 'DD.MM.YYYY HH:mm:ss' }">
         </div>
       </div>
+      </form>
 
       <div class="chart-wrapper" style="height:300px;margin-top:40px;">
         <canvas baseChart class="chart"
-        [datasets]="mainChartData"
-        [labels]="mainChartLabels"
-        [options]="mainChartOptions"
-        [colors]="mainChartColours"
-        [legend]="mainChartLegend"
-        [chartType]="mainChartType"></canvas>
+                [datasets]="mainChartData"
+                [labels]="chartLabels"
+                [options]="mainChartOptions"
+                [colors]="mainChartColours"
+                [legend]=""
+                [chartType]="'line'">
+        </canvas>
       </div>
     </div>
     <div class="card-footer">

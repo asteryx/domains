@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit, ViewChild} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import { FormControl, FormGroup } from '@angular/forms';
 import { getStyle, hexToRgba } from '@coreui/coreui-pro/dist/js/coreui-utilities';
 import { CustomTooltips } from '@coreui/coreui-plugin-chartjs-custom-tooltips';
+// import {BaseChartDirective} from 'ng2-charts';
 import {ToastrService} from 'ngx-toastr';
-import {StatisticForm} from '../../app.models';
+import {max} from 'rxjs/operators';
 import {StatisticService} from '../../services/statistic.service';
 import {AbstractComponent} from '../abstract/component.abstract';
 
@@ -18,42 +19,42 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
               public activatedRoute: ActivatedRoute,
               private statService: StatisticService) {
     super(toastr, router, activatedRoute);
+
+    this.todayStart = new Date();
+    this.todayStart.setHours(0, 0, 0);
+
+    this.todayEnd = new Date();
+    this.todayEnd.setHours(23, 59, 59);
+
+    this.currentForm = new FormGroup({
+      dtStart: new FormControl(this.todayStart),
+      dtEnd: new FormControl(this.todayEnd)
+    });
   }
 
-  currentDate = new Date();
+  // @ViewChild(BaseChartDirective, { static: false }) chart: BaseChartDirective;
 
-  currentForm = new FormGroup({
-    dateRange: new FormControl([
-      new Date(),
-      new Date(this.currentDate.setDate(this.currentDate.getDate() + 7))
-    ])
-  });
-  radioModel:string = 'Day';
-  bsRangeValue: any = [new Date(2017, 7, 4), new Date(2017, 7, 20)];
+  todayStart: Date;
+  todayEnd: Date;
 
-  // mainChart
+  currentForm: FormGroup;
+  divisorsMatch: any = {
+    min: 1,
+    hour: 60,
+    day: 60 * 24
+  };
+  divider:string = 'min';
 
-  public mainChartElements = 1440;
-  public mainChartData1: Array<number> = [];
-  public mainChartData2: Array<number> = [];
-  public mainChartData3: Array<number> = [];
+  maxValue: number = 500;
 
   public mainChartData: Array<any> = [
     {
-      data: this.mainChartData1,
-      label: 'Current'
-    },
-    {
-      data: this.mainChartData2,
-      label: 'Previous'
-    },
-    {
-      data: this.mainChartData3,
-      label: 'BEP'
+      name: "nothing",
+      data: [0]
     }
   ];
   /* tslint:disable:max-line-length */
-  public mainChartLabels: Array<any> = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Thursday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  public chartLabels: Array<any>;
   /* tslint:enable:max-line-length */
   public mainChartOptions: any = {
     tooltips: {
@@ -75,18 +76,14 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
         gridLines: {
           drawOnChartArea: false,
         },
-        ticks: {
-          callback: (value: any) => {
-            return value.charAt(0);
-          }
-        }
+        display: false,
       }],
       yAxes: [{
         ticks: {
           beginAtZero: true,
           maxTicksLimit: 5,
-          stepSize: Math.ceil(250 / 5),
-          max: 250
+          stepSize: Math.ceil(this.maxValue / 5),
+          max: this.maxValue
         }
       }]
     },
@@ -105,115 +102,94 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
       display: false
     }
   };
+
   public mainChartColours: Array<any> = [
     { // brandInfo
       backgroundColor: hexToRgba(getStyle('--info'), 10),
       borderColor: getStyle('--info'),
       pointHoverBackgroundColor: '#fff'
-    },
-    { // brandSuccess
-      backgroundColor: 'transparent',
-      borderColor: getStyle('--success'),
-      pointHoverBackgroundColor: '#fff'
-    },
-    { // brandDanger
-      backgroundColor: 'transparent',
-      borderColor: getStyle('--danger'),
-      pointHoverBackgroundColor: '#fff',
-      borderWidth: 1,
-      borderDash: [8, 5]
     }
   ];
-  public mainChartLegend = false;
-  public mainChartType = 'line';
-
-  // social box charts
-
-  public brandBoxChartData1: Array<any> = [
-    {
-      data: [65, 59, 84, 84, 51, 55, 40],
-      label: 'Facebook'
-    }
-  ];
-  public brandBoxChartData2: Array<any> = [
-    {
-      data: [1, 13, 9, 17, 34, 41, 38],
-      label: 'Twitter'
-    }
-  ];
-  public brandBoxChartData3: Array<any> = [
-    {
-      data: [78, 81, 80, 45, 34, 12, 40],
-      label: 'LinkedIn'
-    }
-  ];
-  public brandBoxChartData4: Array<any> = [
-    {
-      data: [35, 23, 56, 22, 97, 23, 64],
-      label: 'Google+'
-    }
-  ];
-
-  public brandBoxChartLabels: Array<any> = ['January', 'February', 'March', 'April', 'May', 'June', 'July'];
-  public brandBoxChartOptions: any = {
-    tooltips: {
-      enabled: false,
-      custom: CustomTooltips
-    },
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      xAxes: [{
-        display: false,
-      }],
-      yAxes: [{
-        display: false,
-      }]
-    },
-    elements: {
-      line: {
-        borderWidth: 2
-      },
-      point: {
-        radius: 0,
-        hitRadius: 10,
-        hoverRadius: 4,
-        hoverBorderWidth: 3,
-      }
-    },
-    legend: {
-      display: false
-    }
-  };
-  public brandBoxChartColours: Array<any> = [
-    {
-      backgroundColor: 'rgba(255,255,255,.1)',
-      borderColor: 'rgba(255,255,255,.55)',
-      pointHoverBackgroundColor: '#fff'
-    }
-  ];
-  public brandBoxChartLegend = false;
-  public brandBoxChartType = 'line';
 
   public random(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1) + min);
   }
 
   ngOnInit(): void {
-    this.mainChartLabels = [];
-    // generate random values for mainChart
-    for (let i = 0; i <= this.mainChartElements; i++) {
-      this.mainChartData1.push(this.random(140, 200));
-      this.mainChartData2.push(this.random(80, 100));
-      this.mainChartData3.push(65);
-      this.mainChartLabels.push(`{i}`);
-    }
 
-    let frm = new StatisticForm({});
-    let stats = this.statService.getStatistic(frm);
+    // generate random values for mainChart
+    // for (let i = 0; i <= 1440; i++) {
+    //   this.mainChartData1.push(this.random(140, 200));
+    //   // this.mainChartData2.push(this.random(80, 100));
+    //   // this.mainChartData3.push(65);
+    // }
+    // console.log(this.mainChartData);
+
+    this.updateStats();
+  }
+
+  dateValueChange(value: any){
+    this.updateStats();
+  }
+
+  radioChange(value){
+    console.log(this.divisorsMatch[value]);
+  }
+
+  updateStats(){
+    let stats = this.statService.getStatistic(this.currentForm.value);
     stats.subscribe(
-      res => console.log(res),
+      res => this.refreshChart(res),
       error => this.handleServerError(error)
     )
+  }
+
+  generateLabelData(): Array<String>{
+    let result: Array<String> = [];
+
+    let dtStart = this.currentForm.value.dtStart || this.todayStart;
+    let dtEnd = this.currentForm.value.dtEnd || this.todayEnd;
+
+    const step: number = this.divisorsMatch[this.divider] * (1000 * 60);
+
+    // this.mainChartElements = Math.round((dtEnd - dtStart) / step );
+
+    while (dtStart <= dtEnd){
+      result.push(dtStart);
+
+      dtStart = new Date(dtStart.getTime()+(step));
+    }
+
+
+    return result
+  }
+
+  generateChartDomainData(domainStatuses: Array<any>): Array<any> {
+     let result: Array<number> = [];
+
+      for (let index in domainStatuses){
+        const loadTime = domainStatuses[index].loading_time;
+
+        this.maxValue = Math.max(this.maxValue, loadTime);
+        result.push(loadTime);
+      }
+      return result;
+  }
+
+  refreshChart(domainData: any){
+    this.chartLabels = this.generateLabelData();
+    this.mainChartData = [];
+    for (let i = 0; i<=domainData.length - 1; i++){
+      let domain = domainData[i];
+
+      if (domain.statuses.length){
+        this.mainChartData.push({
+          data: this.generateChartDomainData(domain.statuses),
+          label: domain.name
+        })
+      }
+    }
+
+    // console.log(this.chart);
   }
 }
