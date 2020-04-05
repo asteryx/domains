@@ -1,4 +1,4 @@
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HTTP_INTERCEPTORS, HttpClient, HttpHandler, HttpClientModule } from '@angular/common/http';
@@ -14,10 +14,9 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
 };
 
 import { AppComponent } from './app.component';
-
 // Import containers
 import { DefaultLayoutComponent } from './containers';
-
+import {DashboardComponent} from './views/dashboard/dashboard.component';
 // import { P404Component } from './views/error/404.component';
 // import { P500Component } from './views/error/500.component';
 import { LoginComponent } from './views/login/login.component';
@@ -45,8 +44,10 @@ import { ChartsModule } from 'ng2-charts/ng2-charts';
 import { LaddaModule } from 'angular2-ladda';
 import { ToastrModule } from 'ngx-toastr';
 import { BsDatepickerModule } from 'ngx-bootstrap/datepicker';
+import { ButtonsModule } from 'ngx-bootstrap/buttons';
 
 import {AuthenticationService} from './services/authentication.service';
+import {StatisticService} from './services/statistic.service';
 import {Token, User} from './app.models';
 import { HeadersInterceptor, ResponseInterceptor } from './app.interceptors';
 import {AuthenticatedGuard} from './app.guards';
@@ -55,6 +56,7 @@ import {LogoutComponent} from './views/logout/logout.component';
 @NgModule({
   imports: [
     FormsModule,
+    ReactiveFormsModule,
     HttpClientModule,
     BrowserModule,
     BrowserAnimationsModule,
@@ -64,6 +66,7 @@ import {LogoutComponent} from './views/logout/logout.component';
     AppFooterModule,
     AppHeaderModule,
     AppSidebarModule,
+    ButtonsModule,
     PerfectScrollbarModule,
     BsDropdownModule.forRoot(),
     BsDatepickerModule.forRoot(),
@@ -89,6 +92,7 @@ import {LogoutComponent} from './views/logout/logout.component';
     LoginComponent,
     LogoutComponent,
     // RegisterComponent
+    DashboardComponent,
   ],
   providers: [
     {
@@ -107,6 +111,7 @@ import {LogoutComponent} from './views/logout/logout.component';
     },
     HttpClient,
     AuthenticationService,
+    StatisticService,
     AuthenticatedGuard,
     User,
     Token,

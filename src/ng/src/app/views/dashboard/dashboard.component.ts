@@ -4,6 +4,8 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { getStyle, hexToRgba } from '@coreui/coreui-pro/dist/js/coreui-utilities';
 import { CustomTooltips } from '@coreui/coreui-plugin-chartjs-custom-tooltips';
 import {ToastrService} from 'ngx-toastr';
+import {StatisticForm} from '../../app.models';
+import {StatisticService} from '../../services/statistic.service';
 import {AbstractComponent} from '../abstract/component.abstract';
 
 @Component({
@@ -13,7 +15,8 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
 
   constructor(public toastr: ToastrService,
               public router: Router,
-              public activatedRoute: ActivatedRoute) {
+              public activatedRoute: ActivatedRoute,
+              private statService: StatisticService) {
     super(toastr, router, activatedRoute);
   }
 
@@ -205,6 +208,12 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
       this.mainChartData3.push(65);
       this.mainChartLabels.push(`{i}`);
     }
-    console.log(this.mainChartData1, this.mainChartData1.length);
+
+    let frm = new StatisticForm({});
+    let stats = this.statService.getStatistic(frm);
+    stats.subscribe(
+      res => console.log(res),
+      error => this.handleServerError(error)
+    )
   }
 }

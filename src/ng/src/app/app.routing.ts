@@ -5,6 +5,7 @@ import { Routes, RouterModule } from '@angular/router';
 import { DefaultLayoutComponent } from './containers';
 
 import {AuthenticatedGuard} from './app.guards';
+import {DashboardComponent} from './views/dashboard/dashboard.component';
 // import { P404Component } from './views/error/404.component';
 // import { P500Component } from './views/error/500.component';
 import { LoginComponent } from './views/login/login.component';
@@ -66,7 +67,10 @@ export const routes: Routes = [
       // },
       {
         path: 'dashboard',
-        loadChildren: './views/dashboard/dashboard.module#DashboardModule'
+        component: DashboardComponent,
+        data: {
+          title: 'Dashboard'
+        }
       },
       // {
       //   path: 'editors',

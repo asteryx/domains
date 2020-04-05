@@ -61,11 +61,24 @@ export class User {
   }
 }
 
-
 export class LoginForm {
   constructor(
     public email: string = '',
     public password: string = ''
   ) {
+  }
+}
+
+export class StatisticForm {
+  public dt_start?: Date;
+  public dt_end?: Date;
+  public domain_list?: number[];
+
+  constructor(data?: {
+    dt_start?: Date,
+    dt_end?: Date,
+    domain_list?: number[]
+  }) {
+
   }
 }
