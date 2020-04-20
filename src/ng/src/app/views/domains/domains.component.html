@@ -1,10 +1,10 @@
 <div bsModal #editModal="bs-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-primary" role="document">
     <div class="modal-content">
-      <form [formGroup]="currentForm" (submit)="submit($event)">
+      <form [formGroup]="currentForm" (submit)="submit()">
         <div class="modal-header">
           <h4 class="modal-title">Domain</h4>
-          <button type="button" class="close" (click)="cancel()" aria-label="Close">
+          <button type="button" class="close" (click)="modalCancel()" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
         </div>
@@ -25,6 +25,7 @@
                      name="name"
                      class="form-control"
                      formControlName="name"
+                     [ngClass]="{ 'is-invalid': frm.name.touched && frm.name.errors, 'is-valid': frm.name.touched && !frm.name.errors }"
               >
 <!--              <div class="input-group-append">-->
 <!--                <span class="input-group-text"><i class="fa fa-user"></i></span>-->
@@ -41,6 +42,7 @@
                      name="url"
                      class="form-control"
                      formControlName="url"
+                     [ngClass]="{ 'is-invalid': frm.url.touched && frm.url.errors, 'is-valid': frm.url.touched && !frm.url.errors }"
               >
 <!--              <div class="input-group-append">-->
 <!--                <span class="input-group-text"><i class="fa fa-envelope"></i></span>-->
@@ -52,8 +54,12 @@
               <div class="input-group-prepend">
                 <span class="input-group-text">State</span>
               </div>
-              <select id="select1" name="select1" class="form-control">
-                <option value="{{state.id}}}" *ngFor="let state of statesList">{{this.state.name}}</option>
+              <select id="state"
+                      name="state"
+                      class="form-control"
+                      formControlName="state"
+              >
+                <option value="{{state.id}}" *ngFor="let state of statesList">{{this.state.name}}</option>
               </select>
 <!--              <div class="input-group-append">-->
 <!--                <span class="input-group-text"><i class="fa fa-asterisk"></i></span>-->
@@ -62,8 +68,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Save changes</button>
-          <button type="button" class="btn btn-secondary" (click)="cancel()" [disabled]="">Close</button>
+          <button type="submit" class="btn btn-primary" [disabled]="currentForm.pristine || currentForm.invalid">Save changes</button>
+          <button type="button" class="btn btn-secondary" (click)="modalCancel()" >Close</button>
         </div>
       </form>
     </div><!-- /.modal-content -->
@@ -85,7 +91,7 @@
                       data-style="zoom-out"
                       data-toggle="modal"
                       [ladda]='isLoading'
-                      (click)="addOpen()"
+                      (click)="modalOpen()"
               >
                 Add
               </button>

@@ -30,6 +30,13 @@ export class DomainService {
     return this.http.get(url, data);
   }
 
+  getStatesList(){
+    return this.http.get<DomainStatesList>(`${this.dataUrl}states/`)
+      .pipe(
+        retry(3), // retry a failed request up to 3 times
+      );
+  }
+
   getList(q: string = null) {
     let params: HttpParams = new HttpParams();
 
@@ -42,10 +49,7 @@ export class DomainService {
       );
   }
 
-  getStatesList(){
-    return this.http.get<DomainStatesList>(`${this.dataUrl}states/`)
-      .pipe(
-        retry(3), // retry a failed request up to 3 times
-      );
+  create(form){
+    return this.http.post(this.dataUrl, form)
   }
 }

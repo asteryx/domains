@@ -1,6 +1,6 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
-import { FormControl, FormGroup } from '@angular/forms';
+import {FormControl, FormGroup, Validators} from '@angular/forms';
 import { getStyle, hexToRgba } from '@coreui/coreui-pro/dist/js/coreui-utilities';
 import { CustomTooltips } from '@coreui/coreui-plugin-chartjs-custom-tooltips';
 
@@ -17,15 +17,16 @@ export class DomainsComponent extends AbstractComponent {
   public statesList: DomainStatesList;
   public filterQuery = '';
 
+  private urlPattern: RegExp = /(https?:\/\/)([\da-z.-]+)\.([a-z.]{2,6})[/\w .-?=]*\/?/;
+
   @ViewChild('editModal')
   public editModal;
 
   public currentForm: FormGroup = new FormGroup({
-    id: new FormControl(),
-    name: new FormControl(),
-    url: new FormControl(),
-    state: new FormControl(),
-    author: new FormControl()
+    id: new FormControl(null),
+    name: new FormControl("", [Validators.required]),
+    url: new FormControl("", [Validators.required, Validators.pattern(this.urlPattern)]),
+    state: new FormControl(1, [Validators.required])
   });
 
   constructor(public toastr: ToastrService,
@@ -39,6 +40,13 @@ export class DomainsComponent extends AbstractComponent {
         (statesList: DomainStatesList) => this.statesList = statesList
       )
 
+    this.updateDomanList()
+
+  }
+
+  get frm() { return this.currentForm.controls; }
+
+  updateDomanList(){
     this.domainService.getList()
       .subscribe(
         (data: TableData) => {
@@ -48,19 +56,28 @@ export class DomainsComponent extends AbstractComponent {
         }, // success path
         error =>  this.handleServerError(error) // error path
       );
-
   }
 
-  addOpen(){
+  modalOpen(){
+    this.currentForm.reset();
     this.editModal.show();
   }
 
-  cancel(){
+  modalCancel(){
     this.editModal.hide()
   }
 
-  submit(form){
-    console.log(form);
+  submit(){
+    // https://microtrade.com.ua
+    console.log(this.currentForm.value);
+    this.domainService.create(this.currentForm.value)
+      .subscribe(
+        (res) => {
+          this.updateDomanList();
+          this.modalCancel();
+        },
+        (err) => this.handleServerError(err)
+      )
   }
 
 }
