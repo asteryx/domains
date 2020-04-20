@@ -4,7 +4,7 @@ use crate::db::schema::domain_status;
 use crate::db::DbExecutor;
 use crate::CONFIG;
 use actix::{Handler, Message};
-use chrono::{Duration, NaiveDateTime, Utc, DateTime};
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use diesel::backend::Backend;
 use diesel::debug_query;
 use diesel::prelude::*;
@@ -218,7 +218,7 @@ impl Handler<DomainList> for DbExecutor {
         if let Some(state_domain) = &domain_msg.state {
             query = query.filter(domain::state.eq(state_domain));
         } else {
-            query = query.filter(domain::state.ne(DomainState::Removed));
+            // query = query.filter(domain::state.ne(DomainState::Removed));
         }
 
         if let Some(domain_search) = domain_msg.search_string {

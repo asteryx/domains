@@ -7,16 +7,16 @@ export const navItems = [
       variant: 'info',
       text: ''
     }
+  },
+  {
+    name: 'Domains',
+    url: '/domains',
+    icon: 'icon-sitemap',
+    badge: {
+      variant: 'info',
+      text: ''
+    }
   }
-  // {
-  //   title: true,
-  //   name: 'Theme'
-  // },
-  // {
-  //   name: 'Colors',
-  //   url: '/theme/colors',
-  //   icon: 'icon-drop'
-  // },
   // {
   //   name: 'Typography',
   //   url: '/theme/typography',

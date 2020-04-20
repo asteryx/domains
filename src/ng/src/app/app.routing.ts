@@ -6,6 +6,7 @@ import { DefaultLayoutComponent } from './containers';
 
 import {AuthenticatedGuard} from './app.guards';
 import {DashboardComponent} from './views/dashboard/dashboard.component';
+import {DomainsComponent} from './views/domains/domains.component';
 // import { P404Component } from './views/error/404.component';
 // import { P500Component } from './views/error/500.component';
 import { LoginComponent } from './views/login/login.component';
@@ -72,10 +73,13 @@ export const routes: Routes = [
           title: 'Dashboard'
         }
       },
-      // {
-      //   path: 'editors',
-      //   loadChildren: './views/editors/editors.module#EditorsModule'
-      // },
+      {
+        path: 'domains',
+        component: DomainsComponent,
+        data: {
+          title: 'Domains'
+        }
+      },
       // {
       //   path: 'forms',
       //   loadChildren: './views/forms/forms.module#FormsModule'
