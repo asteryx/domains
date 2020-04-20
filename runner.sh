@@ -8,7 +8,6 @@ case ${1} in
     ca-certificates curl gnupg-agent software-properties-common
 	cargo install --force systemfd cargo-watch diesel_cli
 	docker-compose --file docker-compose.yml up -d
- 	make migration run
   ;;
   "migration")
   diesel ${1} ${2} ${3} --database-url=${DATABASE_URL} --migration-dir ./src/migrations
