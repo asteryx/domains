@@ -68,9 +68,14 @@ export class DomainsComponent extends AbstractComponent {
   }
 
   submit(){
-    // https://microtrade.com.ua
     console.log(this.currentForm.value);
-    this.domainService.create(this.currentForm.value)
+    let data = this.currentForm.value;
+    if (data['id'] !== null){
+      data['id'] = Number.parseInt(data['id']);
+    }
+    data['state'] = Number.parseInt(data['state']);
+
+    this.domainService.create(data)
       .subscribe(
         (res) => {
           this.updateDomanList();
