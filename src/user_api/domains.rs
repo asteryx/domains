@@ -61,8 +61,6 @@ pub async fn domain_update(
 ) -> Result<HttpResponse, ErrorResponse> {
     &input_domain.validate()?;
 
-    dbg!(&input_domain);
-
     Ok(json_response(
         data.db
             .send(DomainInsertUpdate {

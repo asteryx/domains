@@ -236,6 +236,7 @@ impl Handler<DomainList> for DbExecutor {
         if let Some(offset) = domain_msg.offset {
             query = query.offset(offset as i64);
         }
+        query = query.order_by(domain::name.asc());
 
         let sql = debug_query::<_, _>(&query).to_string();
         debug!("`{}`", sql);
