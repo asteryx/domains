@@ -29,6 +29,16 @@ export class DomainsComponent extends AbstractComponent {
     state: new FormControl(1, [Validators.required])
   });
 
+  STATE_REMOVE: number = 0;
+  STATE_ENABLED: number = 1;
+
+  private defaultNewDomain: any = {
+    id: null,
+    name: "",
+    url: "",
+    state: this.STATE_ENABLED
+  };
+
   constructor(public toastr: ToastrService,
               public router: Router,
               public activatedRoute: ActivatedRoute,
@@ -58,31 +68,52 @@ export class DomainsComponent extends AbstractComponent {
       );
   }
 
-  modalOpen(){
-    this.currentForm.reset();
+  modalOpen(openData: any = null){
+    this.currentForm.reset(openData || this.defaultNewDomain);
     this.editModal.show();
   }
 
-  modalCancel(){
+  modalClose(){
     this.editModal.hide()
   }
 
-  submit(){
-    console.log(this.currentForm.value);
-    let data = this.currentForm.value;
-    if (data['id'] !== null){
-      data['id'] = Number.parseInt(data['id']);
-    }
-    data['state'] = Number.parseInt(data['state']);
+  remove(obj: any){
+    obj['state'] = this.STATE_REMOVE;
+    this.update(obj);
+  }
 
-    this.domainService.create(data)
+  revert(obj: any){
+    obj['state'] = this.STATE_ENABLED;
+    this.update(obj);
+  }
+
+  update(data: any){
+    this.domainService.update(data)
       .subscribe(
         (res) => {
           this.updateDomanList();
-          this.modalCancel();
+          this.modalClose();
         },
         (err) => this.handleServerError(err)
       )
+  }
+
+  submit(data: any){
+    data['state'] = Number.parseInt(data['state']);
+
+    if (data['id'] !== null){
+      data['id'] = Number.parseInt(data['id']);
+      this.update(data);
+    }else {
+      this.domainService.create(data)
+      .subscribe(
+        (res) => {
+          this.updateDomanList();
+          this.modalClose();
+        },
+        (err) => this.handleServerError(err)
+      )
+    }
   }
 
 }

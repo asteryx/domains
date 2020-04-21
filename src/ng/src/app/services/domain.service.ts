@@ -52,4 +52,8 @@ export class DomainService {
   create(form){
     return this.http.post(this.dataUrl, form)
   }
+
+  update(form){
+    return this.http.put(this.dataUrl, form)
+  }
 }
