@@ -3,10 +3,9 @@ import {ActivatedRoute, Router} from '@angular/router';
 import { FormControl, FormGroup } from '@angular/forms';
 import { getStyle, hexToRgba } from '@coreui/coreui-pro/dist/js/coreui-utilities';
 import { CustomTooltips } from '@coreui/coreui-plugin-chartjs-custom-tooltips';
-// import {BaseChartDirective} from 'ng2-charts';
+import {BaseChartDirective} from 'ng2-charts/ng2-charts';
 import {ToastrService} from 'ngx-toastr';
-import {max} from 'rxjs/operators';
-import {StatisticService} from '../../services/statistic.service';
+import {StatisticService} from '../../services/';
 import {AbstractComponent} from '../abstract/component.abstract';
 
 @Component({
@@ -32,7 +31,8 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
     });
   }
 
-  // @ViewChild(BaseChartDirective, { static: false }) chart: BaseChartDirective;
+  @ViewChild(BaseChartDirective)
+  chart: BaseChartDirective;
 
   todayStart: Date;
   todayEnd: Date;
@@ -45,7 +45,7 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
   };
   divider:string = 'min';
 
-  maxValue: number = 500;
+  maxValue: number = 1000;
 
   public mainChartData: Array<any> = [
     {
@@ -117,19 +117,11 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
 
   ngOnInit(): void {
 
-    // generate random values for mainChart
-    // for (let i = 0; i <= 1440; i++) {
-    //   this.mainChartData1.push(this.random(140, 200));
-    //   // this.mainChartData2.push(this.random(80, 100));
-    //   // this.mainChartData3.push(65);
-    // }
-    // console.log(this.mainChartData);
-
     this.updateStats();
   }
 
   dateValueChange(value: any){
-    this.updateStats();
+    // this.updateStats();
   }
 
   radioChange(value){
@@ -137,8 +129,8 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
   }
 
   updateStats(){
-    let stats = this.statService.getStatistic(this.currentForm.value);
-    stats.subscribe(
+    this.statService.getStatistic(this.currentForm.value)
+      .subscribe(
       res => this.refreshChart(res),
       error => this.handleServerError(error)
     )
@@ -189,7 +181,9 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
         })
       }
     }
-
+    this.chart.chart.config.data.labels = this.chartLabels;
+    this.chart.chart.config.data.datasets = this.mainChartData;
+    this.chart.chart.update();  //datasets = this.mainChartData;
     // console.log(this.chart);
   }
 }
