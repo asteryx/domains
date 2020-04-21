@@ -59,7 +59,7 @@
                       class="form-control"
                       formControlName="state"
               >
-                <option value="{{state.id}}" *ngFor="let state of statesList">{{this.state.name}}</option>
+                <option [value]="state.id" *ngFor="let state of statesList">{{this.state.name}}</option>
               </select>
 <!--              <div class="input-group-append">-->
 <!--                <span class="input-group-text"><i class="fa fa-asterisk"></i></span>-->
