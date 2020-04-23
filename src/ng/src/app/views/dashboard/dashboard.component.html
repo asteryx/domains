@@ -41,7 +41,7 @@
                    formControlName="dtStart"
                    #dtStart="bsDatepicker"
                    bsDatepicker
-                   (bsValueChange) = "dateValueChange($event)"
+                   (bsValueChange) = "dateStartChange($event)"
                    [bsConfig]="{ dateInputFormat: 'DD.MM.YYYY HH:mm:ss' }">
         </div>
         <div class="col-sm-3 col-lg-2 col-md-2">
@@ -50,14 +50,15 @@
                    formControlName="dtEnd"
                    #dtEnd="bsDatepicker"
                    bsDatepicker
-                   (bsValueChange) = "dateValueChange($event)"
+                   (bsValueChange) = "dateEndChange($event)"
                    [bsConfig]="{ dateInputFormat: 'DD.MM.YYYY HH:mm:ss' }">
         </div>
       </div>
       </form>
 
       <div class="chart-wrapper" style="height:300px;margin-top:40px;">
-        <canvas baseChart class="chart"
+        <canvas baseChart
+                class="chart"
                 [datasets]="mainChartData"
                 [labels]="chartLabels"
                 [options]="mainChartOptions"

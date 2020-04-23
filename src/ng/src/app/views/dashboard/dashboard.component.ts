@@ -8,6 +8,64 @@ import {ToastrService} from 'ngx-toastr';
 import {StatisticService} from '../../services/';
 import {AbstractComponent} from '../abstract/component.abstract';
 
+class DateRange{
+  private _todayStart: Date;
+  private _todayEnd: Date;
+
+  private _startDateName: string = "startDate";
+  private _endDateName: string = "endDate";
+
+  constructor(){
+    this._todayStart = new Date();
+    this._todayStart.setHours(0, 0, 0);
+
+    this._todayEnd = new Date();
+    this._todayEnd.setHours(23, 59, 59);
+  }
+
+  private getKey(name: string): string{
+    return `dashboard_${name}`
+  }
+
+  private getDateAttr(name: string, deflt: Date): Date{
+    const keyName = this.getKey(name);
+    let value: Date;
+
+    let stringValue = localStorage.getItem(keyName);
+
+    if(stringValue === null){
+      value = deflt;
+      localStorage.setItem(keyName, JSON.stringify(value));
+    }else {
+      value = new Date(JSON.parse(stringValue));
+    }
+
+    return value
+  }
+
+  private setDateAttr(name: string, value: Date){
+    const keyName = this.getKey(name);
+    localStorage.setItem(keyName, JSON.stringify(value));
+  }
+
+  public get dateStart(){
+    return this.getDateAttr(this._startDateName, this._todayStart)
+  }
+
+  public get dateEnd(){
+    return this.getDateAttr(this._endDateName, this._todayEnd)
+  }
+
+  public set dateStart(value: Date){
+    this.setDateAttr(this._startDateName, value)
+  }
+
+  public set dateEnd(value: Date){
+    this.setDateAttr(this._endDateName, value)
+  }
+
+}
+
 @Component({
   templateUrl: 'dashboard.component.html'
 })
@@ -19,23 +77,20 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
               private statService: StatisticService) {
     super(toastr, router, activatedRoute);
 
-    this.todayStart = new Date();
-    this.todayStart.setHours(0, 0, 0);
 
-    this.todayEnd = new Date();
-    this.todayEnd.setHours(23, 59, 59);
 
     this.currentForm = new FormGroup({
-      dtStart: new FormControl(this.todayStart),
-      dtEnd: new FormControl(this.todayEnd)
+      dtStart: new FormControl(this.dateRange.dateStart),
+      dtEnd: new FormControl(this.dateRange.dateEnd)
     });
   }
 
   @ViewChild(BaseChartDirective)
   chart: BaseChartDirective;
 
-  todayStart: Date;
-  todayEnd: Date;
+  dateRange: DateRange = new DateRange();
+  // todayStart: Date;
+  // todayEnd: Date;
 
   currentForm: FormGroup;
   divisorsMatch: any = {
@@ -116,11 +171,17 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
   }
 
   ngOnInit(): void {
-
+    this.chartLabels = this.generateLabelData();
     this.updateStats();
   }
 
-  dateValueChange(value: any){
+  dateStartChange(value: any){
+    this.dateRange.dateStart = value;
+    // this.updateStats();
+  }
+
+  dateEndChange(value: any){
+    this.dateRange.dateEnd = value;
     // this.updateStats();
   }
 
@@ -136,18 +197,22 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
     )
   }
 
+  formatDate(date: Date){
+    return `${date.getFullYear()}_${date.getMonth()}_${date.getDay()}_${date.getHours()}_${date.getMinutes()}`
+  }
+
   generateLabelData(): Array<String>{
     let result: Array<String> = [];
 
-    let dtStart = this.currentForm.value.dtStart || this.todayStart;
-    let dtEnd = this.currentForm.value.dtEnd || this.todayEnd;
+    let dtStart = this.currentForm.value.dtStart || this.dateRange.dateStart;
+    let dtEnd = this.currentForm.value.dtEnd || this.dateRange.dateEnd;
 
     const step: number = this.divisorsMatch[this.divider] * (1000 * 60);
 
     // this.mainChartElements = Math.round((dtEnd - dtStart) / step );
 
     while (dtStart <= dtEnd){
-      result.push(dtStart);
+      result.push(this.formatDate(dtStart));
 
       dtStart = new Date(dtStart.getTime()+(step));
     }
@@ -169,7 +234,6 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
   }
 
   refreshChart(domainData: any){
-    this.chartLabels = this.generateLabelData();
     this.mainChartData = [];
     for (let i = 0; i<=domainData.length - 1; i++){
       let domain = domainData[i];
