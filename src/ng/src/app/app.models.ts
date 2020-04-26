@@ -69,3 +69,60 @@ export class LoginForm {
   }
 }
 
+export class DateRange{
+  private _todayStart: Date;
+  private _todayEnd: Date;
+
+  private _startDateName: string = "startDate";
+  private _endDateName: string = "endDate";
+
+  constructor(){
+    this._todayStart = new Date();
+    this._todayStart.setHours(0, 0, 0);
+
+    this._todayEnd = new Date();
+    this._todayEnd.setHours(23, 59, 59);
+  }
+
+  private getKey(name: string): string{
+    return `dashboard_${name}`
+  }
+
+  private getDateAttr(name: string, deflt: Date): Date{
+    const keyName = this.getKey(name);
+    let value: Date;
+
+    let stringValue = localStorage.getItem(keyName);
+
+    if(stringValue === null){
+      value = deflt;
+      localStorage.setItem(keyName, JSON.stringify(value));
+    }else {
+      value = new Date(JSON.parse(stringValue));
+    }
+
+    return value
+  }
+
+  private setDateAttr(name: string, value: Date){
+    const keyName = this.getKey(name);
+    localStorage.setItem(keyName, JSON.stringify(value));
+  }
+
+  public get dateStart(){
+    return this.getDateAttr(this._startDateName, this._todayStart)
+  }
+
+  public get dateEnd(){
+    return this.getDateAttr(this._endDateName, this._todayEnd)
+  }
+
+  public set dateStart(value: Date){
+    this.setDateAttr(this._startDateName, value)
+  }
+
+  public set dateEnd(value: Date){
+    this.setDateAttr(this._endDateName, value)
+  }
+
+}

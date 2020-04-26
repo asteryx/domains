@@ -5,66 +5,13 @@ import { getStyle, hexToRgba } from '@coreui/coreui-pro/dist/js/coreui-utilities
 import { CustomTooltips } from '@coreui/coreui-plugin-chartjs-custom-tooltips';
 import {BaseChartDirective} from 'ng2-charts/ng2-charts';
 import {ToastrService} from 'ngx-toastr';
+import {DateRange} from '../../app.models';
 import {StatisticService} from '../../services/';
 import {AbstractComponent} from '../abstract/component.abstract';
 
-class DateRange{
-  private _todayStart: Date;
-  private _todayEnd: Date;
 
-  private _startDateName: string = "startDate";
-  private _endDateName: string = "endDate";
 
-  constructor(){
-    this._todayStart = new Date();
-    this._todayStart.setHours(0, 0, 0);
 
-    this._todayEnd = new Date();
-    this._todayEnd.setHours(23, 59, 59);
-  }
-
-  private getKey(name: string): string{
-    return `dashboard_${name}`
-  }
-
-  private getDateAttr(name: string, deflt: Date): Date{
-    const keyName = this.getKey(name);
-    let value: Date;
-
-    let stringValue = localStorage.getItem(keyName);
-
-    if(stringValue === null){
-      value = deflt;
-      localStorage.setItem(keyName, JSON.stringify(value));
-    }else {
-      value = new Date(JSON.parse(stringValue));
-    }
-
-    return value
-  }
-
-  private setDateAttr(name: string, value: Date){
-    const keyName = this.getKey(name);
-    localStorage.setItem(keyName, JSON.stringify(value));
-  }
-
-  public get dateStart(){
-    return this.getDateAttr(this._startDateName, this._todayStart)
-  }
-
-  public get dateEnd(){
-    return this.getDateAttr(this._endDateName, this._todayEnd)
-  }
-
-  public set dateStart(value: Date){
-    this.setDateAttr(this._startDateName, value)
-  }
-
-  public set dateEnd(value: Date){
-    this.setDateAttr(this._endDateName, value)
-  }
-
-}
 
 @Component({
   templateUrl: 'dashboard.component.html'
@@ -89,8 +36,8 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
   chart: BaseChartDirective;
 
   dateRange: DateRange = new DateRange();
-  // todayStart: Date;
-  // todayEnd: Date;
+  private generatedStart: Date;
+  private generatedEnd: Date;
 
   currentForm: FormGroup;
   divisorsMatch: any = {
@@ -171,22 +118,22 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.chartLabels = this.generateLabelData();
     this.updateStats();
   }
 
   dateStartChange(value: any){
     this.dateRange.dateStart = value;
-    // this.updateStats();
+    this.updateStats();
   }
 
   dateEndChange(value: any){
     this.dateRange.dateEnd = value;
-    // this.updateStats();
+    this.updateStats();
   }
 
   radioChange(value){
-    console.log(this.divisorsMatch[value]);
+    // console.log(this.divisorsMatch[value]);
+    this.updateStats();
   }
 
   updateStats(){
@@ -197,15 +144,31 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
     )
   }
 
-  formatDate(date: Date){
-    return `${date.getFullYear()}_${date.getMonth()}_${date.getDay()}_${date.getHours()}_${date.getMinutes()}`
+  formatDate(inputDate: Date){
+    let date = new Date();
+
+    if (inputDate !== undefined) {
+      date = new Date(inputDate);
+    }
+
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+    // if (this.divider === "hour"){
+    //   date.setMinutes(0);
+    // }
+    // if(this.divider === "day"){
+    //   date.setMinutes(0);
+    //   date.setHours(0);
+    // }
+
+    return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
   }
 
   generateLabelData(): Array<String>{
     let result: Array<String> = [];
 
-    let dtStart = this.currentForm.value.dtStart || this.dateRange.dateStart;
-    let dtEnd = this.currentForm.value.dtEnd || this.dateRange.dateEnd;
+    let dtStart = this.currentForm.value.dtStart;
+    let dtEnd = this.currentForm.value.dtEnd;
 
     const step: number = this.divisorsMatch[this.divider] * (1000 * 60);
 
@@ -217,23 +180,37 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
       dtStart = new Date(dtStart.getTime()+(step));
     }
 
-
     return result
   }
 
   generateChartDomainData(domainStatuses: Array<any>): Array<any> {
-     let result: Array<number> = [];
+    let result: Array<number> = [];
+    let statusIndex:number = 0;
 
-      for (let index in domainStatuses){
-        const loadTime = domainStatuses[index].loading_time;
+    for (let index in this.chartLabels){
+      let loadTime: number = 0;
+      const status = domainStatuses[statusIndex] || {};
 
-        this.maxValue = Math.max(this.maxValue, loadTime);
-        result.push(loadTime);
+      // console.log(status.date, this.formatDate(status.date), this.chartLabels[index]);
+
+      if (this.chartLabels[index] === this.formatDate(status.date)){
+        loadTime = status.loading_time;
+        statusIndex += 1;
       }
-      return result;
+      result.push(loadTime);
+    }
+
+    // for (let index in domainStatuses){
+    //   const loadTime = domainStatuses[index].loading_time;
+    //    this.maxValue = Math.max(this.maxValue, loadTime);
+    //   result.push(loadTime);
+    // }
+    return result;
   }
 
   refreshChart(domainData: any){
+    this.chartLabels = this.generateLabelData();
+
     this.mainChartData = [];
     for (let i = 0; i<=domainData.length - 1; i++){
       let domain = domainData[i];
