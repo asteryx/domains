@@ -28,6 +28,9 @@ case ${1} in
   "down")
   docker-compose --file docker-compose.yml down
   ;;
+  "logs")
+  docker logs domains_frontend -f --tail 30
+  ;;
   "test")
   echo ${POSTGRES_USER:-domains}
   ;;
