@@ -26,6 +26,7 @@ export class DomainsComponent extends AbstractComponent {
     id: new FormControl(null),
     name: new FormControl("", [Validators.required]),
     url: new FormControl("", [Validators.required, Validators.pattern(this.urlPattern)]),
+    color: new FormControl("", [Validators.required]),
     state: new FormControl(1, [Validators.required])
   });
 

@@ -5,6 +5,7 @@ table! {
         url -> Varchar,
         state -> Int4,
         author -> Int4,
+        color -> Varchar,
     }
 }
 

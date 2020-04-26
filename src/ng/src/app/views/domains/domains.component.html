@@ -44,9 +44,20 @@
                      formControlName="url"
                      [ngClass]="{ 'is-invalid': frm.url.touched && frm.url.errors, 'is-valid': frm.url.touched && !frm.url.errors }"
               >
-<!--              <div class="input-group-append">-->
-<!--                <span class="input-group-text"><i class="fa fa-envelope"></i></span>-->
-<!--              </div>-->
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="input-group">
+              <div class="input-group-prepend">
+                <span class="input-group-text">Color</span>
+              </div>
+              <input type="text"
+                     id="color"
+                     name="color"
+                     class="form-control"
+                     formControlName="color"
+                     [ngClass]="{ 'is-invalid': frm.color.touched && frm.color.errors, 'is-valid': frm.color.touched && !frm.color.errors }"
+              >
             </div>
           </div>
           <div class="form-group">

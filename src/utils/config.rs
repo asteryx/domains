@@ -32,6 +32,7 @@ pub struct Config {
     domain_statuses_rotate_days: i32,
     jwt_expiration_hours: u16,
     jwt_secret_key: String,
+    domain_default_color: String,
 }
 
 impl Config {
@@ -78,6 +79,9 @@ impl Config {
             None
         }
     }
+    pub fn domain_default_color(&self) -> &String {
+        &self.domain_default_color
+    }
 }
 
 impl Default for Config {
@@ -94,6 +98,7 @@ impl Default for Config {
             domain_statuses_rotate_days: 2,
             jwt_expiration_hours: 300,
             jwt_secret_key: "Super test secret key".to_string(),
+            domain_default_color: "#808080".to_string(),
         }
     }
 }

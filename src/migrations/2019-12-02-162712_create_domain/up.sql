@@ -6,6 +6,7 @@ CREATE TABLE domain (
     url VARCHAR NOT NULL,
     state INTEGER DEFAULT 1 NOT NULL,
     author INTEGER NOT NULL,
+    color VARCHAR(7) NOT NULL,
     FOREIGN KEY(author) REFERENCES users(id)
 );
 

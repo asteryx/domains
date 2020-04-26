@@ -3,6 +3,7 @@ use crate::errors::ErrorResponse;
 use crate::jwt::Claims;
 use crate::utils::json_response;
 use crate::AppState;
+use crate::CONFIG;
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde_derive::{Deserialize, Serialize};
 use validator::Validate;
@@ -49,6 +50,7 @@ pub async fn domain_create(
             url: input_domain.url.clone(),
             state: input_domain.state.clone(),
             author: Some(claims.user_id()),
+            color: input_domain.color.clone(),
         })
         .await?;
 
@@ -69,6 +71,7 @@ pub async fn domain_update(
                 url: input_domain.url.clone(),
                 state: input_domain.state.clone(),
                 author: None,
+                color: input_domain.color.clone(),
             })
             .await??,
     ))

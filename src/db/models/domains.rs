@@ -7,6 +7,7 @@ use actix::{Handler, Message};
 use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use diesel::backend::Backend;
 use diesel::debug_query;
+use diesel::pg::Pg;
 use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind as DieselErrorKind, Error as DieselError};
 use diesel::sql_types::Integer;
@@ -81,6 +82,7 @@ where
 #[derive(
     Associations,
     Identifiable,
+    Insertable,
     Queryable,
     Debug,
     DeriveSerialize,
@@ -96,6 +98,7 @@ pub struct Domain {
     pub url: String,
     pub state: DomainState,
     pub author: i32,
+    pub color: String,
 }
 
 fn validate_urls(url: &str) -> Result<(), ValidationError> {
@@ -124,6 +127,7 @@ pub struct DomainInsertUpdate {
     pub url: String,
     pub state: DomainState,
     pub author: Option<i32>,
+    pub color: Option<String>,
 }
 
 impl Message for DomainInsertUpdate {
@@ -136,19 +140,44 @@ impl Handler<DomainInsertUpdate> for DbExecutor {
     fn handle(&mut self, domain_msg: DomainInsertUpdate, _ctx: &mut Self::Context) -> Self::Result {
         use crate::db::schema::domain::dsl::*;
 
+        dbg!(&domain_msg);
+
         let inserted = match domain_msg.id {
-            Some(domain_id) => diesel::update(domain.filter(id.eq(domain_id)))
-                .set((
-                    name.eq(&domain_msg.name),
-                    url.eq(&domain_msg.url),
-                    state.eq(&domain_msg.state),
-                ))
-                .returning(id)
-                .get_results::<i32>(&self.pool.get().unwrap()),
-            _ => diesel::insert_into(domain)
-                .values(&domain_msg)
-                .returning(id)
-                .get_results::<i32>(&self.pool.get().unwrap()),
+            Some(0) => {
+                let query = diesel::insert_into(domain)
+                    .values(&domain_msg)
+                    .returning(id);
+
+                let sql = debug_query::<Pg, _>(&query).to_string();
+                debug!("`{}`", sql);
+
+                query.get_results::<i32>(&self.pool.get().unwrap())
+            }
+            Some(domain_id) => {
+                let query = diesel::update(domain.filter(id.eq(domain_id)))
+                    .set((
+                        name.eq(&domain_msg.name),
+                        url.eq(&domain_msg.url),
+                        state.eq(&domain_msg.state),
+                        color.eq(match &domain_msg.color {
+                            Some(_color) => _color.clone(),
+                            _ => CONFIG.domain_default_color().clone(),
+                        }),
+                    ))
+                    .returning(id);
+
+                query.get_results::<i32>(&self.pool.get().unwrap())
+            }
+            _ => {
+                let query = diesel::insert_into(domain)
+                    .values(&domain_msg)
+                    .returning(id);
+
+                let sql = debug_query::<Pg, _>(&query).to_string();
+                debug!("`{}`", sql);
+
+                query.get_results::<i32>(&self.pool.get().unwrap())
+            }
         };
 
         match inserted {
@@ -162,6 +191,10 @@ impl Handler<DomainInsertUpdate> for DbExecutor {
                         author: match domain_msg.author {
                             Some(a) => a,
                             _ => 0,
+                        },
+                        color: match domain_msg.color {
+                            Some(_color) => _color,
+                            _ => CONFIG.domain_default_color().clone(),
                         },
                     })
                 } else {
