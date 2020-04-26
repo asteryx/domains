@@ -140,8 +140,6 @@ impl Handler<DomainInsertUpdate> for DbExecutor {
     fn handle(&mut self, domain_msg: DomainInsertUpdate, _ctx: &mut Self::Context) -> Self::Result {
         use crate::db::schema::domain::dsl::*;
 
-        dbg!(&domain_msg);
-
         let inserted = match domain_msg.id {
             Some(0) => {
                 let query = diesel::insert_into(domain)

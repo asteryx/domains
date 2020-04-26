@@ -3,7 +3,6 @@ use crate::errors::ErrorResponse;
 use crate::jwt::Claims;
 use crate::utils::json_response;
 use crate::AppState;
-use crate::CONFIG;
 use actix_web::{web, HttpRequest, HttpResponse};
 use serde_derive::{Deserialize, Serialize};
 use validator::Validate;
