@@ -4,8 +4,9 @@ DATABASE_URL="postgres://domains:defaultpassword@localhost:5432/domains"
 
 case ${1} in
   "build")
-  sudo apt install libpq-dev wkhtmltopdf apt-transport-https \
-    ca-certificates curl gnupg-agent software-properties-common
+  sudo apt install -y libpq-dev wkhtmltopdf apt-transport-https \
+    ca-certificates curl gnupg-agent software-properties-common \
+    build-essential libsqlite3-dev libmysqlclient-dev
 	cargo install --force systemfd cargo-watch diesel_cli
 	docker-compose --file docker-compose.yml up -d
   ;;
