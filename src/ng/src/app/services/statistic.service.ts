@@ -1,6 +1,24 @@
 import { Injectable, ViewContainerRef } from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import { map } from 'rxjs/operators';
+import {DomainStateData} from "./domain.service";
+
+export interface StatusData {
+  date: Date,
+  loading_time: number,
+  status_code: number,
+  headers: String,
+  filename: String,
+}
+
+export interface StatisticData {
+  id: number;
+  name: string;
+  statuses: StatusData;
+}
+
+export interface StatisticList extends Array<StatisticData> {}
+
 
 @Injectable()
 export class StatisticService {
@@ -31,6 +49,6 @@ export class StatisticService {
       params = params.set('domain_list', `[${data.domainList}]`);
     }
 
-    return this.http.get('api_user/statistic/', {params});
+    return this.http.get<StatisticList>('api_user/statistic/', {params});
   }
 }

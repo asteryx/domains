@@ -6,7 +6,7 @@ use actix::prelude::*;
 use actix_web::web;
 use chrono::Utc;
 use futures::executor::block_on;
-use reqwest::blocking::Client;
+use reqwest::blocking::{Client, Response};
 use std::fs;
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::process::Command;
@@ -144,11 +144,18 @@ impl Handler<PingRequest> for Ping {
             &CONFIG.image_format()
         );
 
-        let result = self.client.head(&msg.domain.url).send().unwrap();
+        let result: Option<Response> = match self.client.head(&msg.domain.url).send() {
+            Ok(res) => Some(res),
+            _ => None,
+        };
         let duration_since = Utc::now().signed_duration_since(now).num_milliseconds();
 
-        let headers_str = format!("{:#?}", result.headers());
-        let status = result.status();
+        let mut status: i32 = 0;
+        let mut headers_str: String = "".to_string();
+        if let Some(result) = result {
+            headers_str = format!("{:#?}", result.headers());
+            status = u16::from(result.status()) as i32;
+        }
 
         let full_path = format!("{}{}", &media_root, &filename);
 
@@ -185,7 +192,7 @@ impl Handler<PingRequest> for Ping {
             date: now.naive_utc(),
             loading_time: duration_since as i32,
             headers: headers_str,
-            status_code: u16::from(status) as i32,
+            status_code: status,
             filename: file_name_to_db,
             domain_id: msg.domain.id,
         }))
