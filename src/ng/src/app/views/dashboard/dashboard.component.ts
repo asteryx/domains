@@ -153,19 +153,21 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
 
     date.setSeconds(0);
     date.setMilliseconds(0);
-    // if (this.divider === "hour"){
-    //   date.setMinutes(0);
-    // }
-    // if(this.divider === "day"){
-    //   date.setMinutes(0);
-    //   date.setHours(0);
-    // }
 
-    return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+    if (this.divider === "hour"){
+      date.setMinutes(0);
+    }
+
+    if(this.divider === "day"){
+      date.setMinutes(0);
+      date.setHours(0);
+    }
+    return date
+    // return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
   }
 
-  generateLabelData(): Array<String>{
-    let result: Array<String> = [];
+  generateLabelData(): Array<Date>{
+    let result: Array<Date> = [];
 
     let dtStart = this.currentForm.value.dtStart;
     let dtEnd = this.currentForm.value.dtEnd;
@@ -185,26 +187,37 @@ export class DashboardComponent extends AbstractComponent implements OnInit {
 
   generateChartDomainData(domainStatuses: Array<any>): Array<any> {
     let result: Array<number> = [];
-    let statusIndex:number = 0;
+    let statusIndex: number = 0;
+    let currentDate: Date;
 
     for (let index in this.chartLabels){
+      let currentValue: number = 0;
+      let countValues: number = 0;
+
+      const labelDate = this.chartLabels[index];
+
       let loadTime: number = 0;
-      const status = domainStatuses[statusIndex] || {};
+      let status = domainStatuses[statusIndex] || {};
 
-      // console.log(status.date, this.formatDate(status.date), this.chartLabels[index]);
+      currentDate = this.formatDate(status.date);
 
-      if (this.chartLabels[index] === this.formatDate(status.date)){
+      if (labelDate.toString() === currentDate.toString()){
         loadTime = status.loading_time;
         statusIndex += 1;
+      }else if(currentDate < labelDate){
+
+        while (currentDate < labelDate && statusIndex<=domainStatuses.length){
+          currentValue += status.loading_time;
+          countValues += 1;
+          statusIndex += 1;
+          status = domainStatuses[statusIndex] || {};
+          currentDate = this.formatDate(status.date);
+        }
+        loadTime = currentValue / countValues;
+
       }
       result.push(loadTime);
     }
-
-    // for (let index in domainStatuses){
-    //   const loadTime = domainStatuses[index].loading_time;
-    //    this.maxValue = Math.max(this.maxValue, loadTime);
-    //   result.push(loadTime);
-    // }
     return result;
   }
 
