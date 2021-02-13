@@ -42,7 +42,7 @@ mod utils;
 
 pub use utils::{config::CONFIG, errors, guards, hashers, jwt, router, state, state::AppState};
 
-#[actix_rt::main]
+#[actix_web::main]
 async fn main() -> io::Result<()> {
     let mut listenfd = ListenFd::from_env();
 

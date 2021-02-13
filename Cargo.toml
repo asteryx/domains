@@ -5,16 +5,16 @@ authors = ["asteryx <asteryx82@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-actix = "^0.9.0"
-actix-web = "^2.0.0"
-actix-rt = "^1.0.0"
-actix-files = "^0.2.1"
-actix-identity = "0.2.1"
-actix-service = "1.0.5"
+actix = "^0.10.0"
+actix-web = "^3.0.0"
+actix-rt = "^2.0.2"
+actix-files = "^0.5.0"
+actix-identity = "^0.3.1"
+actix-service = "1.0.6"
 chrono = { version = "0.4.10", features = ["serde"]}
 diesel = { version = "1.4.2", features = ["postgres", "chrono", "serde_json", "r2d2"] }
 dotenv = "0.14.1"
-futures = "0.3.1"
+futures = "0.3.12"
 listenfd = "0.3"
 tera = "0.11"
 serde = "1.0.92"
